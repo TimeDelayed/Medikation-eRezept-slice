@@ -1,0 +1,7 @@
+{
+  "eslint.nodePath": ".yarn/sdks",
+  "eslint.validate": ["javascript"],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  }
+}
