@@ -2,6 +2,8 @@ node_modules
 database
 *.env.pnp.*
 
+*.env
+
 
 .yarn/*
 !.yarn/patches
