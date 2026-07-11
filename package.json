@@ -4,8 +4,9 @@
   "description": "",
   "main": "fhir-client.js",
   "type": "module",
+  "packageManager": "yarn@4.12.0",
   "scripts": {
-    "start:dev": "nodemon --watch src src/service.js",
+    "start:dev": "nodemon --watch src --env-file=.env src/service.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "mongodb": "docker run --rm -v ./database:/data/db -p 27017:27017 mongo:8"
   },

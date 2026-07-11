@@ -4,6 +4,8 @@ database
 
 *.env
 
+private.key
+public.key
 
 .yarn/*
 !.yarn/patches

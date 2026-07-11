@@ -1,16 +1,18 @@
 import express from 'express'
 import mongoose from 'mongoose'
 import jwt from 'jsonwebtoken'
-import Patient from './schema/Patient.schema.js'
 
-import { nanoid } from 'nanoid'
-
+//setup
 const app = express()
 const port = 3000
-
 app.use(express.json())
 
+const test = process.env.TEST
+console.log(test)
 const publicKey = process.env.PUBLIC_KEY
+console.log(publicKey)
+const privateKey = process.env.PRIVATE_KEY
+console.log(privateKey)
 
 const securityMiddleware = async (req, res, next) => {
   try {
