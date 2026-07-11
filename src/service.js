@@ -5,6 +5,7 @@ import router from "./routes/index.js";
 //setup
 const app = express()
 const port = 3000
+export const fhirBaseUrl = "http://localhost:8080/fhir"
 app.use(express.json(), router)
 
 const main = async () => {
