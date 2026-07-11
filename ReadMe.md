@@ -14,14 +14,14 @@ Yarn is already included via Corepack.
 
 Use Commands and 
 
-### PUBLIC_KEY
-````bash 
-openssl rsa -in private.key -pubout -outform PEM -out public.key
-````
-
 ### PRIVATE_KEY
 ````bash 
 openssl genrsa -out ./private.key 4096
+````
+
+### PUBLIC_KEY
+````bash 
+openssl rsa -in private.key -pubout -outform PEM -out public.key
 ````
 
 
