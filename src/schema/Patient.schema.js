@@ -1,6 +1,6 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
 
-const { nanoid } = require('nanoid')
+import { nanoid } from 'nanoid'
 
 const PatientSchema = new mongoose.Schema({
   patientId: {
@@ -15,4 +15,4 @@ const PatientSchema = new mongoose.Schema({
   birthDate: String
 })
 
-module.exports = mongoose.model('Patient', PatientSchema)
+export default mongoose.model('Patient', PatientSchema)

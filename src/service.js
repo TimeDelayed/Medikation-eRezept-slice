@@ -1,9 +1,9 @@
-const express = require('express')
-const mongoose = require('mongoose')
-const jwt = require('jsonwebtoken')
-const Patient = require('./schema/Patient.schema')
+import express from 'express'
+import mongoose from 'mongoose'
+import jwt from 'jsonwebtoken'
+import Patient from './schema/Patient.schema.js'
 
-const { nanoid } = require('nanoid')
+import { nanoid } from 'nanoid'
 
 const app = express()
 const port = 3000
@@ -42,12 +42,12 @@ const handleNewMedication = (req, res) => {
 }
 
 const main = async () => {
-  // const db = await mongoose.connect('mongodb://127.0.0.1:27017/fhir')
-  // console.log('Connected ...')
+  const db = await mongoose.connect('mongodb://127.0.0.1:27017/fhir')
+  console.log('Connected ...')
 
-  // Public Endpoints
   app.get('/ping', (_, res) => res.json(({ version: '2.13.0' })))
 
+  // security MiddleWare for JWT 
   app.use(securityMiddleware)
 
   // Privte Endpoints
