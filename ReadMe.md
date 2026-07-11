@@ -21,7 +21,7 @@ openssl genrsa -out ./private.key 4096
 
 ### PUBLIC_KEY
 ````bash 
-openssl rsa -in private.key -pubout -outform PEM -out public.key
+openssl rsa -in ./private.key -pubout -outform PEM -out ./public.key
 ````
 
 
