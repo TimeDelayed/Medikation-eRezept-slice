@@ -1,0 +1,113 @@
+@startuml patientenJourny-realitaet
+
+start
+:Patient betritt Arzt Praxis;
+
+:Schalter: Name / Versichertenkarte abgeben;
+if(Notfall) then(Nein)
+:suche via kv
+GET /Patient?identifier=KVNR (Name, usw. als Tiebreaker!));
+else(ja)
+ :suche ohne kv
+ (via Name und anderen Attributen)
+ GET /Patient?name=...&birthdate=...;
+endif
+
+if (gefunden?) then (ja)
+else (nein)
+  :Patient neu anlegen
+  POST /Patient;
+endif
+:Wichtig;
+ note right
+    Patient existiert zu diesem Zeitpunk 100% auf fhir (Source of Truth)
+  end note
+
+:Consent prüfen
+GET /Consent?patient=...&status=active (FHIR));
+if (gültiges DSGVO-Einverständnis auf FHIR?) then (ja)
+ note left
+   lokale DSGVO muss nicht aktuell sein, deshalb wieder bei fhir fragen!
+  end note
+else (nein)
+  :DSGVO vom Patienten hohlen;
+  if (stimmt zu?) then (ja)
+    :Consent (permit) vormerken =
+    wird mit dem Aufnahme-Bundle geschickt (später));
+  else (nein)
+    :Consent (deny) anlegen
+    POST /Consent
+    + Lösch-Vormerkung lokal (MongoDB)
+    (Zusatzdaten);
+  endif
+endif
+
+:Wichtig;
+ note right
+   Consent existiert zu diesem Zeitpunkt 100% auf fhir (Source of Truth)
+  end note
+
+if (Neupatient?) then (ja)
+  :Anamnesebogen
+  (Vorerkrankungen, Dauermedikamente, Allergien);
+else (nein)
+  :Kurz-Update am Schalter:
+  hat sich etwas geändert?
+  (Medikamente, Allergien);
+endif
+
+:Wichtig;
+ note right
+   Können wir einfach gleich behandeln = einfaches updates der Daten
+   Wir haben zu diesem Zeitpunkt auch 100% die neuen Daten zum aktualiseren
+  end note
+
+if (Consent?) then (ja)
+  :Aufnahme-Bundle zu FHIR?
+  Vorher ziehen?
+  Dauermedikation im System aktualisieren
+  POST / (Bundle = transaction):
+  Patient + Condition (Vorerkrankungen)
+  + MedicationStatement (Dauermedikamente)
+  + Consent (DSGVO)
+  + Provenance (Quelle: Anamnesebogen);
+else (nein)
+  :Anamnese bleibt lokal / auf Papier
+  Ablehnung Consent zu FHIR für dokumentation
+  keine klinischen Daten (Condition,
+  MedicationStatement);
+endif
+
+:Behandlungszimmer beim Arzt;
+note left
+vieles hiervon ist nur "gespielt"
+end note
+:Arzt: Medikationshistorie abrufen
+GET /MedicationStatement?subject=...&status=active;
+note right
+Dummy GET für unser Szenario
+end note
+:Arzt: Diagnose + Schmerzmedikation wählen;
+note right
+Es wird einfach random eine bei uns aus der DB gezogen
+end note
+
+:Verordnung vormerken
+(lokal in MongoDB);
+
+: Vorgang abschließen
+POST / (Bundle transaction)
+MedicationRequest + Provenance atomar;
+
+:Behandlungsdokumentation bleibt gespeichert (Aufbewahrungspflicht von 10 Jahre);
+note right
+unabhängig von der Einwilligung
+end note
+if (Consent?) then (nein)
+  :Zusatzdaten löschen;
+else (ja)
+endif
+
+:Medikation erfolgreich verordnet;
+stop
+@enduml

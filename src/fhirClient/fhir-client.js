@@ -37,15 +37,6 @@ export const fhireCreatePatient = async (newPatient) => {
 
 }
 
-export const fhireGetConsent = () => {
-
-}
-
-export const fhirSetConsent = () => {
-
-}
-
-
 
 
 
