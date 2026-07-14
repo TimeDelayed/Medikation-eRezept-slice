@@ -2,15 +2,13 @@ import { SYSTEMNAME } from "../fhirClient/fhir-client.js";
 
 // fhir helper
 export const createFhirIdentifier = (id, insuranceType) => {
-  let insuranceURI = null
+  let insuranceURI = null;
   if (insuranceType === "GKV") {
-    insuranceURI = "http://fhir.de/sid/gkv/kvid-10"
-  }
-  else if (insuranceType === "PKV") {
-    insuranceURI = "http://fhir.de"
-  }
-  else {
-    throw new Error("Wrong insuranceType, please use GKV or PKV!")
+    insuranceURI = "http://fhir.de/sid/gkv/kvid-10";
+  } else if (insuranceType === "PKV") {
+    insuranceURI = "http://fhir.de";
+  } else {
+    throw new Error("Wrong insuranceType, please use GKV or PKV!");
   }
   return {
     type: {
@@ -18,9 +16,9 @@ export const createFhirIdentifier = (id, insuranceType) => {
         {
           system: "http://hl7.org",
           code: "KV",
-          display: "National health plan identifier"
-        }
-      ]
+          display: "National health plan identifier",
+        },
+      ],
     },
     system: insuranceURI,
     value: id,
@@ -28,17 +26,19 @@ export const createFhirIdentifier = (id, insuranceType) => {
 };
 
 export const createFhirCategory = (code, namespace) => {
-  let breaker = "/"
+  let breaker = "/";
   if (SYSTEMNAME.endsWith("/")) {
-    breaker = ""
+    breaker = "";
   }
   return {
-    coding: [{
-      system: SYSTEMNAME + breaker + namespace,
-      code: code
-    }]
-  }
-}
+    coding: [
+      {
+        system: SYSTEMNAME + breaker + namespace,
+        code: code,
+      },
+    ],
+  };
+};
 
 // https://coreui.io/answers/how-to-generate-uuid-in-javascript/
 const createNewId = () => {
@@ -60,9 +60,9 @@ export const createFhirPatient = ({
   givenNames,
   gender,
   birthday,
-  // TODO address?
+  // TODO address?????????????????
 }) => {
-  const newIdentifier = createFhirIdentifier(kv, insuranceType);
+  const newIdentifier = createFhirIdentifier({ kv, insuranceType });
 
   return {
     resourceType: "Patient",
@@ -81,7 +81,7 @@ export const createFhirPatient = ({
 /**
  * https://hl7.org/fhir/R4/patient.html
  */
-export const createFhirConsent = (patientId, category, status) => {
+export const createFhirConsent = ({ patientId, category, status }) => {
   return {
     resourceType: "Consent",
     status: status,
@@ -103,68 +103,149 @@ export const createFhirConsent = (patientId, category, status) => {
 
 /**
  * https://hl7.org/fhir/R4/condition.html
+ *
+ * Minimal for our use case:
+ * - subject
+ * - code
  */
-export const createFhirCondition = (clinicalStatus) => {
+export const createFhirCondition = ({
+  patientId,
+  conditionCode,
+  diagnosis,
+}) => {
   return {
     resourceType: "Condition",
-    clinicalStatus: clinicalStatus,
-    code: [],
+    subject: createPatientRef(patientId),
+    code: {
+      coding: [
+        {
+          system: `${SYSTEMNAME}/CodeSystem/condition`,
+          code: conditionCode,
+          display: diagnosis,
+        },
+      ],
+    },
   };
 };
 
 /**
  * https://hl7.org/fhir/R4/medicationstatement.html
- */
-export const createFhirMedicationStatement = () => {};
-
-/**
- * 	https://hl7.org/fhir/R4/provenance.html
- */
-export const createFhirProvenance = () => {};
-
-/**
- * https://build.fhir.org/medicationrequest.html
- * https://hl7.org/fhir/R4/medication.html
- * need
- * https://build.fhir.org/medicationrequest.html
- * status (active | on-hold | ended | stopped | completed | cancelled | entered-in-error | draft | unknown)
- * intent (proposal | plan | order | original-order | reflex-order | filler-order | instance-order | option (immutable))
- * medication (https://build.fhir.org/medicationrequest-definitions.html#MedicationRequest.medication)
- * subject (Individual or group for whom the medication has been requested)
- */
-/**
- * extra
- * identifier (Praxis + Patient)
- * authoredOn TIMESTAMP?
- * requester (Arzt) ?
- */
-export const createFhirMedication = (medication) => {
-  return {};
-};
-
-/**
- * https://build.fhir.org/medicationrequest.html
  *
- * need
- * status (active | on-hold | ended | stopped | completed | cancelled | entered-in-error | draft | unknown)
- * intent (proposal | plan | order | original-order | reflex-order | filler-order | instance-order | option (immutable))
- * medication (https://build.fhir.org/medicationrequest-definitions.html#MedicationRequest.medication)
- * subject (Individual or group for whom the medication has been requested)
+ * Required:
+ * - status
+ * - medication[x]
+ * - subject
  */
-/**
- * extra
- * identifier (Praxis + Patient)
- * authoredOn TIMESTAMP?
- * requester (Arzt) ?
- */
-export const createFhirMedicationRequest = (MedicationRequest) => {
-  const newIdentifier = createFhirIdentifier(MedicationRequest.kv);
-  const mediacation = build;
-
+export const createFhirMedicationStatement = ({
+  patientId,
+  status,
+  medicationId,
+}) => {
   return {
-    resourceType: "MedicationRequest",
-    identifier: [newIdentifier],
+    resourceType: "MedicationStatement",
+    status,
+    medicationReference: {
+      reference: `Medication/${medicationId}`,
+    },
+    subject: createPatientRef(patientId),
   };
 };
 
-export const createFhirTransactionBundle = () => {};
+/**
+ * https://hl7.org/fhir/R4/provenance.html
+ *
+ * Required:
+ * - target
+ * - recorded
+ * - agent
+ */
+export const createFhirProvenance = ({
+  targetReference,
+  agentReference,
+}) => {
+  return {
+    resourceType: "Provenance",
+    target: [
+      {
+        reference: targetReference,
+      },
+    ],
+    recorded: new Date().toISOString(),
+    agent: [
+      {
+        who: {
+          reference: agentReference,
+        },
+      },
+    ],
+  };
+};
+
+/**
+ * https://hl7.org/fhir/R4/medication.html
+ *
+ * Medication itself has no mandatory content fields,
+ * but code is required for it to be useful.
+ */
+export const createFhirMedication = ({
+  medicationCode,
+  medicationName,
+}) => {
+  return {
+    resourceType: "Medication",
+    code: {
+      coding: [
+        {
+          system: `${SYSTEMNAME}/CodeSystem/medication`,
+          code: medicationCode,
+          display: medicationName,
+        },
+      ],
+    },
+  };
+};
+
+/**
+ * https://hl7.org/fhir/R4/medicationrequest.html
+ *
+ * Required:
+ * - status
+ * - intent
+ * - medication[x]
+ * - subject
+ */
+export const createFhirMedicationRequest = ({
+  patientId,
+  medicationId,
+  status,
+  intent,
+}) => {
+  return {
+    resourceType: "MedicationRequest",
+    status,
+    intent,
+    medicationReference: {
+      reference: `Medication/${medicationId}`,
+    },
+    subject: createPatientRef(patientId),
+  };
+};
+
+/**
+ * https://hl7.org/fhir/R4/bundle.html
+ *
+ * Minimal transaction bundle.
+ */
+export const createFhirTransactionBundle = (resources) => {
+  return {
+    resourceType: "Bundle",
+    type: "transaction",
+    entry: resources.map((resource) => ({
+      resource,
+      request: {
+        method: "POST",
+        url: resource.resourceType,
+      },
+    })),
+  };
+};
