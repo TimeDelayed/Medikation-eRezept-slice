@@ -3,7 +3,7 @@ import axios from "axios";
 
 const FHIR_BASE_URL = "https://hapi.fhir.org/baseR4";
 export const SYSTEMNAME =
-  "https://easyhealth.example/fhir/CodeSystem/consent-category";
+  "https://easyhealth.example/fhir/CodeSystem/";
 
 const getEntries = (bundle) => (bundle.entry ?? []).map((e) => e.resource);
 
