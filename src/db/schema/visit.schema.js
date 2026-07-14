@@ -2,18 +2,17 @@ import mongoose from "mongoose";
 import { nanoid } from 'nanoid'
 import { Schema } from "mongoose";
 
+//https://mongoosejs.com/docs/guide.html#timeseries
 const visitSchema = new Schema({
   visitId: {
     type: String,
-    unique: true,
     index: true,
     required: true,
-    default: nanoid
+    default: nanoid()
   },
   kv: {
     type: String,
     required: true,
-    unique: true,
   },
   patientFhirId: {
     type: String,
@@ -30,15 +29,15 @@ const visitSchema = new Schema({
   localPrescriptions: [
     {
       code: {
-        type: string,
+        type: String,
         required: false,
       },
       medication : {
-        type: string,
+        type: String,
         required: false,
       }
     }
-],
+  ],
   consent: {
     haveConsent: {
       type: Boolean,
@@ -58,10 +57,12 @@ const visitSchema = new Schema({
     type: String,
     required: false,
   },
-  createdAt : {
-    required: true,
-    default: Date.now(),
-  },
-}, 'validateBeforeSave', true)
+}, { timestamps: true })
 
-export default visitSchema
+//https://github.com/Automattic/mongoose/issues/14097
+//https://stackoverflow.com/questions/51349764/createindex-in-mongoose
+// aufbewahrung von 10 Jahren
+visitSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 365 * 10 });
+
+const Visit = mongoose.model('Visit', visitSchema)
+export default Visit

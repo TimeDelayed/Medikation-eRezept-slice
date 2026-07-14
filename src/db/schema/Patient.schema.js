@@ -2,17 +2,16 @@ import mongoose from 'mongoose'
 
 import { nanoid } from 'nanoid'
 
+//https://stackoverflow.com/questions/68959108/why-is-this-mongodb-document-being-generated-with-the-same-nanoid
 const PatientSchema = new mongoose.Schema({
   patientId: {
     type: String,
-    unique: true,
     index: true,
     default: nanoid
   },
-  timestamp: { type: Number, default: Date.now },
-  familyName: { type: String, required: true },
-  givenName: [String],
+  name: String,
   birthDate: String
 })
 
-export default mongoose.model('Patient', PatientSchema)
+const Patient = mongoose.model('Patient', PatientSchema)
+export default Patient
