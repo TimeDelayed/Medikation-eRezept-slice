@@ -1,33 +1,68 @@
 import { SYSTEMNAME } from "../fhirClient/fhir-client.js";
 
 // fhir helper
-export const createFhirIdentifier = (id) => {
+export const createFhirIdentifier = (id, insuranceType) => {
+  let insuranceURI = null
+  if (insuranceType === "GKV") {
+    insuranceURI = "http://fhir.de/sid/gkv/kvid-10"
+  }
+  else if (insuranceType === "PKV") {
+    insuranceURI = "http://fhir.de"
+  }
+  else {
+    throw new Error("Wrong insuranceType, please use GKV or PKV!")
+  }
   return {
-    system: SYSTEMNAME,
+    type: {
+      coding: [
+        {
+          system: "http://hl7.org",
+          code: "KV",
+          display: "National health plan identifier"
+        }
+      ]
+    },
+    system: insuranceURI,
     value: id,
   };
 };
+
+export const createFhirCategory = (code, namespace) => {
+  let breaker = "/"
+  if (SYSTEMNAME.endsWith("/")) {
+    breaker = ""
+  }
+  return {
+    coding: [{
+      system: SYSTEMNAME + breaker + namespace,
+      code: code
+    }]
+  }
+}
 
 // https://coreui.io/answers/how-to-generate-uuid-in-javascript/
 const createNewId = () => {
   const uuid = crypto.randomUUID();
   return uuid;
 };
-const createPatientRef = (id) => {
-  reference: `patient/${id}`;
-};
+
+const createPatientRef = (id) => ({
+  reference: `Patient/${id}`,
+});
 
 /**
  * https://hl7.org/fhir/R4/patient.html
  */
 export const createFhirPatient = ({
   kv,
+  insuranceType,
   familyName,
   givenNames,
   gender,
   birthday,
+  // TODO address?
 }) => {
-  const newIdentifier = createFhirIdentifier(kv);
+  const newIdentifier = createFhirIdentifier(kv, insuranceType);
 
   return {
     resourceType: "Patient",
@@ -46,10 +81,10 @@ export const createFhirPatient = ({
 /**
  * https://hl7.org/fhir/R4/patient.html
  */
-export const createFhirConsent = (patientId, category) => {
+export const createFhirConsent = (patientId, category, status) => {
   return {
     resourceType: "Consent",
-    status: "active",
+    status: status,
     scope: {
       coding: [
         {
@@ -58,16 +93,7 @@ export const createFhirConsent = (patientId, category) => {
         },
       ],
     },
-    category: [
-      {
-        coding: [
-          {
-            system: SYSTEMNAME,
-            code: category,
-          },
-        ],
-      },
-    ],
+    category: [createFhirCategory(category, "consent-type")],
     patient: {
       reference: createPatientRef(patientId),
     },
@@ -78,7 +104,13 @@ export const createFhirConsent = (patientId, category) => {
 /**
  * https://hl7.org/fhir/R4/condition.html
  */
-export const createFhirCondition = () => {};
+export const createFhirCondition = (clinicalStatus) => {
+  return {
+    resourceType: "Condition",
+    clinicalStatus: clinicalStatus,
+    code: [],
+  };
+};
 
 /**
  * https://hl7.org/fhir/R4/medicationstatement.html
