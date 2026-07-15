@@ -21,6 +21,24 @@ export const searchPatientByIdentifierHandler = async (req, res) => {
   return res.status(200).json(patients)
 };
 
+//TODO: create other intake endpoints
+
+export const createVisitHandler = async (req, res) => {
+  res.status(500)
+}
+
+export const checkConsentHandler = async (req, res) => {
+  res.status(500)
+}
+
+export const recordConsentHandler = async (req, res) => {
+  res.status(500)
+}
+
+export const submitAnamnesisHandler = async (req, res) => {
+  res.status(500)
+}
+
 export const createPatientHandler = async (req, res) => {
   const {kv, insuranceType, familyName, givenNames, gender, birthDate} = req.body
   console.log(kv)
