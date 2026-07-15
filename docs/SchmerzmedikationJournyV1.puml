@@ -70,10 +70,10 @@ if (Consent?) then (ja)
   Patient + Condition (Vorerkrankungen)
   + MedicationStatement (Dauermedikamente)
   + Consent (DSGVO)
-  + Provenance (Quelle: Anamnesebogen);
+  + Provenance;
 else (nein)
   :Anamnese bleibt lokal / auf Papier
-  Ablehnung Consent zu FHIR für dokumentation
+  Ablehnung Consent zu FHIR (bereits vorhanden)) für dokumentation
   keine klinischen Daten (Condition,
   MedicationStatement);
 endif
