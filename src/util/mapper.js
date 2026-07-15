@@ -52,6 +52,25 @@ const createPatientRef = (id) => ({
 
 /**
  * https://hl7.org/fhir/R4/patient.html
+ *
+ * Creates a FHIR Patient.
+ *
+ * Required:
+ * - kv
+ * - insuranceType
+ * - familyName
+ * - givenNames
+ *
+ * Optional:
+ * - gender
+ * - birthday
+ * - address
+ * - telecom
+ * - maritalStatus
+ * - communication
+ * - contact
+ *
+ * Only provided optional values are included.
  */
 export const createFhirPatient = ({
   kv,
@@ -60,11 +79,15 @@ export const createFhirPatient = ({
   givenNames,
   gender,
   birthday,
-  // TODO address?????????????????
+  address,
+  telecom,
+  maritalStatus,
+  communication,
+  contact,
 }) => {
   const newIdentifier = createFhirIdentifier({ kv, insuranceType });
 
-  return {
+  const patient = {
     resourceType: "Patient",
     identifier: [newIdentifier],
     name: [
@@ -73,12 +96,48 @@ export const createFhirPatient = ({
         given: givenNames,
       },
     ],
-    gender: gender,
-    birthDate: birthday,
   };
+
+  if (gender) patient.gender = gender;
+  if (birthday) patient.birthDate = birthday;
+  if (address) patient.address = address;
+  if (telecom) patient.telecom = telecom;
+  if (maritalStatus) patient.maritalStatus = maritalStatus;
+  if (communication) patient.communication = communication;
+  if (contact) patient.contact = contact;
+
+  return patient;
 };
 
-// Todo: Update Fhir Patient, reduce create patient
+/**
+ * Updates an existing FHIR Patient resource.
+ *
+ * Expected updates (all optional):
+ * - gender
+ * - birthday
+ * - address
+ * - telecom
+ * - maritalStatus
+ * - communication
+ * - contact
+ *
+ * Only provided fields overwrite the existing patient resource.
+ */
+export const updateFhirPatient = (patient, updates) => {
+  const updatedPatient = { ...patient };
+
+  if (updates.gender) updatedPatient.gender = updates.gender;
+  if (updates.birthday) updatedPatient.birthDate = updates.birthday;
+  if (updates.address) updatedPatient.address = updates.address;
+  if (updates.telecom) updatedPatient.telecom = updates.telecom;
+  if (updates.maritalStatus)
+    updatedPatient.maritalStatus = updates.maritalStatus;
+  if (updates.communication)
+    updatedPatient.communication = updates.communication;
+  if (updates.contact) updatedPatient.contact = updates.contact;
+
+  return updatedPatient;
+};
 
 /**
  * https://hl7.org/fhir/R4/patient.html
