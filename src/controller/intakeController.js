@@ -1,4 +1,4 @@
-import {fhireCreatePatient, fhireSearchPatientsByIdentifier, SYSTEMNAME} from "../fhirClient/fhir-client.js";
+import {fhirPostPatient, fhirGetPatientsByIdentifier, SYSTEMNAME} from "../fhirClient/fhir-client.js";
 import {createFhirPatient} from "../util/mapper.js";
 
 const patientTieBreaker = (patients) => {
@@ -10,7 +10,7 @@ export const searchPatientByIdentifierHandler = async (req, res) => {
   const kv = req.params.kv;
 
   // https://hl7.org/fhir/R4/search.html#token
-  let patients = await fhireSearchPatientsByIdentifier(`${SYSTEMNAME}|${kv}`)
+  let patients = await fhirGetPatientsByIdentifier(`${SYSTEMNAME}|${kv}`)
 
   if(patients.length === 0) {
     return res.status(404).json({ error: 'Patient not found' })
@@ -22,21 +22,22 @@ export const searchPatientByIdentifierHandler = async (req, res) => {
 };
 
 export const createPatientHandler = async (req, res) => {
-  const {kv, familyName, givenNames, gender, birthDate} = req.body
+  const {kv, insuranceType, familyName, givenNames, gender, birthDate} = req.body
   console.log(kv)
+  console.log(insuranceType)
   console.log(familyName)
   console.log(givenNames)
   console.log(gender)
   console.log(birthDate)
 
   console.log(JSON.stringify(req.body))
-  if(!kv || !familyName || !givenNames || !gender || !birthDate) {
+  if(!kv || !insuranceType || !familyName || !givenNames || !gender || !birthDate) {
     return res.status(400).json({ error: 'Missing required fields' })
   }
   const newPatient = createFhirPatient(req.body)
   console.log("test")
   try {
-    const result = await fhireCreatePatient(newPatient)
+    const result = await fhirPostPatient(newPatient)
     res.status(200).json(result)
   }
   catch(e) {

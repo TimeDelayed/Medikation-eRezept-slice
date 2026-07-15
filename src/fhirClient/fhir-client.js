@@ -1,3 +1,5 @@
+export const SYSTEMNAME = "EASY"
+
 const requireValue = (value, name) => {
   if (value === undefined || value === null || value === "") {
     throw new Error(`${name} is required`);
