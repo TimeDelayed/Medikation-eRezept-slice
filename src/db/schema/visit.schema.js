@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { nanoid } from 'nanoid'
 import { Schema } from "mongoose";
+import anamnesisSchema from "./anamnesis.schema.js"
 
 //https://mongoosejs.com/docs/guide.html#timeseries
 const visitSchema = new Schema({
@@ -25,19 +26,7 @@ const visitSchema = new Schema({
     required: true,
     default: 'started',
   },
-  // from doctor
-  localPrescriptions: [
-    {
-      code: {
-        type: String,
-        required: false,
-      },
-      medication : {
-        type: String,
-        required: false,
-      }
-    }
-  ],
+  //consent
   consent: {
     haveConsent: {
       type: Boolean,
@@ -53,6 +42,25 @@ const visitSchema = new Schema({
       required: false,
     }
   },
+  // anamnesis (übergangsweise zum speichern (löschung,wenn consent nicht vorhanden))
+  anamnesis : {
+    type: anamnesisSchema,
+    required: false
+  },
+  // from doctor
+  localPrescriptions: [
+    {
+      code: {
+        type: String,
+        required: false,
+      },
+      medication : {
+        type: String,
+        required: false,
+      }
+    }
+  ],
+  // send bundle
   fhirBundleRef: {
     type: String,
     required: false,
