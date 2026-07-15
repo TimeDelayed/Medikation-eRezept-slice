@@ -1,6 +1,5 @@
-import {fhireCreatePatient, fhireSearchPatientsByIdentifier, SYSTEMNAME} from "./fhirClient/fhir-client.js";
-import PatientAll from "./homework/src/fhir/PatientAll.js";
-import {createFhirPatient} from "./util/mapper.js";
+import {fhireCreatePatient, fhireSearchPatientsByIdentifier, SYSTEMNAME} from "../fhirClient/fhir-client.js";
+import {createFhirPatient} from "../util/mapper.js";
 
 const patientTieBreaker = (patients) => {
   // TODO: implement later
@@ -23,7 +22,7 @@ export const searchPatientByIdentifierHandler = async (req, res) => {
 };
 
 export const createPatientHandler = async (req, res) => {
-    const {kv, familyName, givenNames, gender, birthDate} = req.body
+  const {kv, familyName, givenNames, gender, birthDate} = req.body
   console.log(kv)
   console.log(familyName)
   console.log(givenNames)
@@ -31,32 +30,21 @@ export const createPatientHandler = async (req, res) => {
   console.log(birthDate)
 
   console.log(JSON.stringify(req.body))
-    if(!kv || !familyName || !givenNames || !gender || !birthDate) {
-        return res.status(400).json({ error: 'Missing required fields' })
-    }
+  if(!kv || !familyName || !givenNames || !gender || !birthDate) {
+    return res.status(400).json({ error: 'Missing required fields' })
+  }
   const newPatient = createFhirPatient(req.body)
   console.log("test")
   try {
     const result = await fhireCreatePatient(newPatient)
     res.status(200).json(result)
   }
-    catch(e) {
-      console.error(e)
-      res.status(e.response?.status ?? 502).json({
-        status: 'error',
-        message: 'FHIR patient search failed',
-        error: e.response?.data?.issue?.map(i => i.diagnostics ?? i.code) ?? [e.message],
-      })
-    }
+  catch(e) {
+    console.error(e)
+    res.status(e.response?.status ?? 502).json({
+      status: 'error',
+      message: 'FHIR patient search failed',
+      error: e.response?.data?.issue?.map(i => i.diagnostics ?? i.code) ?? [e.message],
+    })
+  }
 }
-
-export const searchMedicationHandler  = (req, res) => {
-  return 0
-}
-
-export const createPrescriptionHandler  = (req, res) => {
-  return 0
-}
-
-
-

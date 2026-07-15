@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import {handleDummyLogin, securityMiddleware} from "../auth/auth.js";
 import {handleNewMedication, searchPatients} from "../fhirClient/fhir-client.js";
-import {createPatientHandler, searchPatientByIdentifierHandler} from "../MainController.js";
+import {createPatientHandler, searchPatientByIdentifierHandler} from "../controller/intakeController.js";
 
 //https://expressjs.com/en/5x/guide/routing/
 const router = Router()
