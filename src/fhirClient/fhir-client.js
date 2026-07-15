@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const FHIR_BASE_URL = "https://hapi.fhir.org/baseR4";
 export const SYSTEMNAME = "https://easyhealth.example/fhir/CodeSystem/";
 
