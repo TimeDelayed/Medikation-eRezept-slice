@@ -1,5 +1,16 @@
-export const SYSTEMNAME = "EASY"
+const FHIR_BASE_URL = "https://hapi.fhir.org/baseR4";
+export const SYSTEMNAME = "https://easyhealth.example/fhir/CodeSystem/";
 
+const getEntries = (bundle) => (bundle.entry ?? []).map((e) => e.resource);
+
+// Create default axios client
+export const fhir = axios.create({
+  baseURL: FHIR_BASE_URL,
+  headers: {
+    "Content-Type": "application/fhir+json",
+    Accept: "application/fhir+json",
+  },
+});
 const requireValue = (value, name) => {
   if (value === undefined || value === null || value === "") {
     throw new Error(`${name} is required`);
@@ -41,6 +52,16 @@ export const fhirGetConditionById = async (conditionId) => {
   return result.data;
 };
 
+export const fhirGetAllConditionsByPatientId = async (patientId) => {
+  requireValue(patientId, "patientId");
+
+  const result = await fhir.get("/Condition", {
+    params: { subject: patientId },
+  });
+
+  return getEntries(result.data);
+};
+
 export const fhirPostCondition = async (newCondition) => {
   requireValue(newCondition, "newCondition");
 
@@ -55,6 +76,16 @@ export const fhirGetConsentById = async (consentId) => {
 
   const result = await fhir.get(`/Consent/${consentId}`);
   return result.data;
+};
+
+export const fhirGetAllConsentsByPatientId = async (patientId) => {
+  requireValue(patientId, "patientId");
+
+  const result = await fhir.get("/Consent", {
+    params: { patient: patientId },
+  });
+
+  return getEntries(result.data);
 };
 
 export const fhirPostConsent = async (newConsent) => {
@@ -89,6 +120,16 @@ export const fhirGetMedicationRequestById = async (medicationRequestId) => {
   return result.data;
 };
 
+export const fhirGetAllMedicationRequestsByPatientId = async (patientId) => {
+  requireValue(patientId, "patientId");
+
+  const result = await fhir.get("/MedicationRequest", {
+    params: { subject: patientId },
+  });
+
+  return getEntries(result.data);
+};
+
 export const fhirPostMedicationRequest = async (newMedicationRequest) => {
   requireValue(newMedicationRequest, "newMedicationRequest");
 
@@ -106,6 +147,16 @@ export const fhirGetMedicationStatementById = async (medicationStatementId) => {
   );
 
   return result.data;
+};
+
+export const fhirGetAllMedicationStatementsByPatientId = async (patientId) => {
+  requireValue(patientId, "patientId");
+
+  const result = await fhir.get("/MedicationStatement", {
+    params: { subject: patientId },
+  });
+
+  return getEntries(result.data);
 };
 
 export const fhirPostMedicationStatement = async (newMedicationStatement) => {
@@ -126,6 +177,16 @@ export const fhirGetProvenanceById = async (provenanceId) => {
 
   const result = await fhir.get(`/Provenance/${provenanceId}`);
   return result.data;
+};
+
+export const fhirGetAllProvenanceByPatientId = async (patientId) => {
+  requireValue(patientId, "patientId");
+
+  const result = await fhir.get("/Provenance", {
+    params: { patient: patientId },
+  });
+
+  return getEntries(result.data);
 };
 
 export const fhirPostProvenance = async (newProvenance) => {

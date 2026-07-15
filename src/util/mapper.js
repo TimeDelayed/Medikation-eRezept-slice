@@ -78,6 +78,8 @@ export const createFhirPatient = ({
   };
 };
 
+// Todo: Update Fhir Patient, reduce create patient
+
 /**
  * https://hl7.org/fhir/R4/patient.html
  */
