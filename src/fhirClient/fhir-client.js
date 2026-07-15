@@ -1,79 +1,102 @@
-import fs from "node:fs/promises";
-import axios from "axios";
+// ---------- Patient ----------
 
-const FHIR_BASE_URL = "https://hapi.fhir.org/baseR4";
-export const SYSTEMNAME =
-  "https://easyhealth.example/fhir/CodeSystem/";
-
-const getEntries = (bundle) => (bundle.entry ?? []).map((e) => e.resource);
-
-// create default axios client
-export const fhir = axios.create({
-  baseURL: FHIR_BASE_URL,
-  headers: {
-    "Content-Type": "application/fhir+json",
-    Accept: "application/fhir+json",
-  },
-});
-
-// search patient with identifier
-export const fhireSearchPatientsByIdentifier = async (identifier) => {
+export const fhirGetPatientsByIdentifier = async (identifier) => {
   const result = await fhir.get("/Patient", {
     params: { identifier },
   });
-  console.log(result.data);
-  console.log(getEntries(result.data));
   return getEntries(result.data);
 };
 
-// create Patient with patient data
-export const fhireCreatePatient = async (newPatient) => {
-  const result = await fhir.post("/Patient", newPatient);
-  console.log("test");
-  console.log(result);
-  console.log("test1");
-  console.log(result.data);
+export const fhirGetPatientById = async (patientId) => {
+  const result = await fhir.get(`/Patient/${patientId}`);
   return result.data;
 };
 
-export const searchPatients = async (req, res) => {
-  const request = `${FHIR_BASE_URL}/Patient?name=von`;
-  const result = await fetch(request);
-  const bundle = await result.json();
-  return res.status(200).json(bundle);
+export const fhirPostPatient = async (newPatient) => {
+  const result = await fhir.post("/Patient", newPatient);
+  return result.data;
 };
 
-const getPatient = async (patientId) => {
-  const result = await fetch(
-    `https://hapi.fhir.org/baseR4/Patient/${patientId}`,
+// ---------- Condition ----------
+
+export const fhirGetConditionById = async (conditionId) => {
+  const result = await fhir.get(`/Condition/${conditionId}`);
+  return result.data;
+};
+
+export const fhirPostCondition = async (newCondition) => {
+  const result = await fhir.post("/Condition", newCondition);
+  return result.data;
+};
+
+// ---------- Consent ----------
+
+export const fhirGetConsentById = async (consentId) => {
+  const result = await fhir.get(`/Consent/${consentId}`);
+  return result.data;
+};
+
+export const fhirPostConsent = async (newConsent) => {
+  const result = await fhir.post("/Consent", newConsent);
+  return result.data;
+};
+
+// ---------- Medication ----------
+
+export const fhirGetMedicationById = async (medicationId) => {
+  const result = await fhir.get(`/Medication/${medicationId}`);
+  return result.data;
+};
+
+export const fhirPostMedication = async (newMedication) => {
+  const result = await fhir.post("/Medication", newMedication);
+  return result.data;
+};
+
+// ---------- MedicationRequest ----------
+
+export const fhirGetMedicationRequestById = async (medicationRequestId) => {
+  const result = await fhir.get(`/MedicationRequest/${medicationRequestId}`);
+  return result.data;
+};
+
+export const fhirPostMedicationRequest = async (newMedicationRequest) => {
+  const result = await fhir.post("/MedicationRequest", newMedicationRequest);
+  return result.data;
+};
+
+// ---------- MedicationStatement ----------
+
+export const fhirGetMedicationStatementById = async (medicationStatementId) => {
+  const result = await fhir.get(
+    `/MedicationStatement/${medicationStatementId}`,
   );
-  return result.json();
-};
-// const run = async () => {
-//   // const searchResult = await searchPatients()
-//   const patient = await getPatient('131284146')
-//   const appointment = await getAppointment(patient.id)
-//   await fs.writeFile('patient.json', JSON.stringify(patient, undefined, 2))
-//   await fs.writeFile('appointment.json', JSON.stringify(appointment, undefined, 2))
-//   await getPatient()
-// }
-
-export const handleNewMedication = (req, res) => {
-  // console.log(req.params)
-  // console.log(req.query)
-  // console.log(req.body.medication)
-
-  // console.log(req.user)
-  // if (req.user?.claims?.includes('medication:create')) {
-  //   return res.status(401)
-  // }
-
-  res.status(201).json({ result: "ok" });
+  return result.data;
 };
 
-const getAppointment = async (patientId) => {
-  const result = await fetch(
-    `https://hapi.fhir.org/baseR4/Appointment?patient=${patientId}`,
+export const fhirPostMedicationStatement = async (newMedicationStatement) => {
+  const result = await fhir.post(
+    "/MedicationStatement",
+    newMedicationStatement,
   );
-  return result.json();
+  return result.data;
+};
+
+// ---------- Provenance ----------
+
+export const fhirGetProvenanceById = async (provenanceId) => {
+  const result = await fhir.get(`/Provenance/${provenanceId}`);
+  return result.data;
+};
+
+export const fhirPostProvenance = async (newProvenance) => {
+  const result = await fhir.post("/Provenance", newProvenance);
+  return result.data;
+};
+
+// ---------- Bundle ----------
+
+export const fhirPostTransactionBundle = async (transactionBundle) => {
+  const result = await fhir.post("/", transactionBundle);
+  return result.data;
 };
