@@ -68,32 +68,58 @@ export const createPatientRef = (patientId) => ({
   reference: `Patient/${patientId}`,
 });
 
+const addressMatches = (patientAddress, address) => {
+  if (!patientAddress || !address) {
+    return false;
+  }
 
-export const patientsTieBreaker = (patients, familyName, givenName, birthday, address, gender) => {
-  // Tie-breaker logic to find the best match among multiple patients
-  const matchingPatients = patients.filter((patient) => {
-    const patientAddress = patient.address?.[0];
-    const patientBirthday = patient.birthDate;
-    const patientGender = patient.gender;
-    const patientFamilyName = patientName?.family;
-    const patientGivenName = patientName?.given?.[0];
+  // Swagger / Query: address=Musterstraße 1, 12345 Berlin
+  if (typeof address === "string") {
     return (
-      patientFamilyName === familyName &&
-      patientGivenName === givenName &&
-      patientBirthday === birthday &&
-      patientAddress === address &&
-      patientGender === gender
+      patientAddress.text === address ||
+      patientAddress.line?.some((line) => address.includes(line)) ||
+      address.includes(patientAddress.city ?? "") ||
+      address.includes(patientAddress.postalCode ?? "")
+    );
+  }
+
+  // Intern: FHIR Address object
+  return (
+    patientAddress.line?.[0] === address.line?.[0] &&
+    patientAddress.city === address.city &&
+    patientAddress.postalCode === address.postalCode &&
+    patientAddress.country === address.country
+  );
+};
+
+// Returns the first patient that matches the given demographics. If no patient matches, returns undefined.
+// Choice was made that fhir server does not completely enforce valid patients, so there can be multiple patients with the same demographics.
+// The ONLY real difference is the fhir patient id, which is not known to the user. Therefore, we just return the first patient that matches the demographics
+// for this demonstrative use-case. In a real world scenario, this wouldn't be a problem since the insurance number is unique.
+export const patientsTieBreaker = (
+  patients,
+  familyName,
+  givenName,
+  birthday,
+  address,
+  gender,
+) => {
+  const matchingPatients = patients.filter((patient) => {
+    const name =
+      patient.name?.find((n) => n.use === "official") ?? patient.name?.[0];
+    const patientAddress = patient.address?.[0];
+
+    return (
+      name?.family === familyName &&
+      name?.given?.includes(givenName) &&
+      patient.birthDate === birthday &&
+      patient.gender === gender &&
+      addressMatches(patientAddress, address)
     );
   });
 
-  if (matchingPatients.length === 1) {
-    return matchingPatients[0];
-  } else if (matchingPatients.length > 1) {
-    throw new Error("Multiple patients match the provided data!");
-  } else {
-    throw new Error("No patients match the provided data!");
-  }
-}
+  return matchingPatients[0];
+};
 
 /**
  * Creates a Medication reference.
@@ -132,3 +158,33 @@ export const createFhirAddress = ({
   postalCode,
   country,
 });
+
+/**
+ * Creates a FHIR ContactPoint (telecom).
+ *
+ * Parameters:
+ * - system: phone | fax | email | pager | url | sms | other
+ * - value: Contact value
+ * - use: home | work | temp | old | mobile (optional)
+ * - rank: Preference order (optional)
+ *
+ * https://hl7.org/fhir/R4/datatypes.html#ContactPoint
+ */
+export const createFhirTelecom = ({ system, value, use, rank }) => {
+  const telecom = {
+    system,
+    value,
+  };
+
+  if (use) {
+    telecom.use = use;
+  }
+
+  if (rank) {
+    telecom.rank = rank;
+  }
+
+  return telecom;
+};
+
+

@@ -34,7 +34,7 @@ router.get("/ping", (_, res) => res.json({ version: "2.13.0" }));
 
 /**
  * @openapi
- * /Patients:
+ * /Patient:
  *   get:
  *     tags:
  *       - Patient
@@ -85,11 +85,45 @@ router.get("/ping", (_, res) => res.json({ version: "2.13.0" }));
  *       409:
  *         description: Multiple patients matched the demographic search.
  */
-router.get("/Patients", searchPatientHandler);
+router.get("/Patient", searchPatientHandler);
+
+// ---------- Consent ----------
+/**
+ * @openapi
+ * /Patient/consents:
+ *   get:
+ *     tags:
+ *       - Patient consent
+ *     summary: Searches consents of a category for a patient.
+ *     description: >
+ *       Searches for consents of a specific category for a patient. The patient is identified by the provided fhir patientId.
+ *     parameters:
+ *       - in: query
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           description: FHIR Patient reference.
+ *       - in: query
+ *         name: category
+ *         required: true
+ *         schema:
+ *           type: string
+ *           description: >
+ *             Consent category. Example: "dsgvo" or "research".
+ *     responses:
+ *       200:
+ *         description: Matching consents returned.
+ *       404:
+ *         description: No consents found for the patient and category.
+ *       400:
+ *         description: Missing required query parameters.
+ */
+router.get("/Patient/consents", checkConsentHandler);
 
 /**
  * @openapi
- * /Patients:
+ * /Patient:
  *   post:
  *     tags:
  *       - Patient
@@ -104,12 +138,12 @@ router.get("/Patients", searchPatientHandler);
  *           schema:
  *             $ref: "#/components/schemas/PatientCreate"
  *     responses:
- *       200:
+ *       201:
  *         description: Patient successfully created.
  *       400:
  *         description: Missing required patient data.
  */
-router.post("/Patients", createPatientHandler);
+router.post("/Patient", createPatientHandler);
 
 // ---------- Visit ----------
 

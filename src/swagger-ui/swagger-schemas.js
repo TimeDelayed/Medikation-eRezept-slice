@@ -1,4 +1,4 @@
-export const patientSchemas = {
+export const schemas = {
   PatientCreate: {
     type: "object",
     required: ["kv", "insuranceType", "familyName", "givenNames"],
@@ -13,16 +13,37 @@ export const patientSchemas = {
         enum: ["GKV", "PKV"],
         example: "GKV",
       },
-      familyName: {
-        type: "string",
-        example: "Mustermann",
-      },
-      givenNames: {
+      name: {
         type: "array",
         items: {
-          type: "string",
+          type: "object",
+          properties: {
+            use: {
+              type: "string",
+              enum: [
+                "official",
+                "usual",
+                "temp",
+                "nickname",
+                "anonymous",
+                "old",
+                "maiden",
+              ],
+              example: "official",
+            },
+            family: {
+              type: "string",
+              example: "Mustermann",
+            },
+            given: {
+              type: "array",
+              items: {
+                type: "string",
+                example: ["Max", "Karl"],
+              },
+            },
+          },
         },
-        example: ["Max", "Karl"],
       },
       gender: {
         type: "string",
@@ -38,7 +59,7 @@ export const patientSchemas = {
         type: "array",
         description: "FHIR Patient.address",
         items: {
-          type: "object",
+          $ref: "#/components/schemas/AddressCreate",
         },
       },
       telecom: {
@@ -65,6 +86,52 @@ export const patientSchemas = {
         items: {
           type: "object",
         },
+      },
+    },
+  },
+  AddressCreate: {
+    type: "object",
+    properties: {
+      use: {
+        type: "string",
+        enum: ["home", "work", "temp", "old", "billing"],
+        example: "home",
+      },
+      type: {
+        type: "string",
+        enum: ["postal", "physical", "both"],
+        example: "both",
+      },
+      text: {
+        type: "string",
+        example: "Musterstraße 1, 12345 Berlin",
+      },
+      line: {
+        type: "array",
+        items: {
+          type: "string",
+        },
+        example: ["Musterstraße 1"],
+      },
+      city: {
+        type: "string",
+        example: "Berlin",
+      },
+      postalCode: {
+        type: "string",
+        example: "10115",
+      },
+      district: {
+        type: "string",
+        example: "Mitte",
+      },
+      state: {
+        type: "string",
+        example: "Berlin",
+      },
+      country: {
+        type: "string",
+        example: "DE",
       },
     },
   },

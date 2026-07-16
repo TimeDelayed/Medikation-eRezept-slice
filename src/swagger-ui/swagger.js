@@ -1,5 +1,5 @@
 import swaggerJsdoc from "swagger-jsdoc";
-import { patientSchemas } from "./swagger-schemas.js";
+import { schemas } from "./swagger-schemas.js";
 
 const options = {
   definition: {
@@ -9,10 +9,11 @@ const options = {
       version: "1.0.0",
     },
     components: {
-      schemas: patientSchemas
+      schemas: {
+        ...schemas,
+      }
     },
   },
   apis: ["./src/routes/*.js", "./src/controller/*.js"],
 };
-
 export default swaggerJsdoc(options);

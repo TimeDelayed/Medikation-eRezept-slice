@@ -3,49 +3,75 @@ import {
   fhirGetPatientByIdentifier,
   fhirGetPatientsByDemographics,
   fhirGetActivePatientConsents,
-  SYSTEMNAME,
 } from "../fhirClient/fhir-client.js";
+import { FHIR_NAMESPACE } from "../constants/fhirConstants.js";
 import { createFhirPatient } from "../util/mapper.js";
+import {
+  createIdentifierSearchToken,
+  patientsTieBreaker,
+} from "../util/fhirHelpers.js";
 
+// Had to be rewritten to not assume that kv numbers are unique across patients.
+// Our Fhir test server does not enforce this, and it is possible that a  kv numbers has multiple patients.
+// Therefore, we need to search by demographics if no kv number is provided. If a kv number is provided,
+// we first search by identifier, and if that fails, we fall back to demographic search.
 export const searchPatientHandler = async (req, res) => {
-  const { kv, familyName, givenName, birthday, address, gender } = req.query;
-
-  if (kv) {
-    const patient = await fhirGetPatientByIdentifier(`${SYSTEMNAME}|${kv}`);
-
-    if (patients.length === 0) {
-      return res.status(404).json({ error: "Patient not found" });
-    }
-
-    if (patients.length > 1) {
-      return res.status(500).json({
-        error: "Duplicate patient identifiers detected",
-      });
-    }
-
-    return res.status(200).json(patients[0]);
-  }
-
-  const patients = await fhirGetPatientsByDemographics({
+  const {
+    kv,
+    insuranceType,
     familyName,
     givenName,
     birthday,
     address,
     gender,
-  });
+  } = req.query;
 
-  if (patients.length === 0) {
-    return res.status(404).json({ error: "Patient not found" });
-  }
-
-  if (patients.length > 1) {
-    return res.status(409).json({
-      error: "Multiple patients match the provided data",
-      patients,
+  if (!familyName || !givenName || !birthday || !address || !gender) {
+    return res.status(400).json({
+      error:
+        "Missing required query parameters. Require family name, given name, birthday, address, gender!",
     });
   }
 
-  return res.status(200).json(patients[0]);
+  let patients;
+
+  if (kv && insuranceType) {
+    const identifier = createIdentifierSearchToken(kv, insuranceType);
+    patients = await fhirGetPatientByIdentifier(identifier);
+
+    if (patients.length === 0) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    if (patients.length === 1) {
+      return res.status(200).json(patients[0]);
+    }
+  } else {
+    patients = await fhirGetPatientsByDemographics({
+      familyName,
+      givenName,
+      birthday,
+      address,
+      gender,
+    });
+  }
+
+  const patient = patientsTieBreaker(
+    patients,
+    familyName,
+    givenName,
+    birthday,
+    address,
+    gender,
+  );
+
+  if (!patient) {
+    return res.status(404).json({
+      error: "Patient not found",
+    });
+  }
+
+  return res.status(200).json(patient);
 };
 
 //TODO: create other intake endpoints
@@ -55,14 +81,14 @@ export const createVisitHandler = async (req, res) => {
 };
 
 export const checkConsentHandler = async (req, res) => {
-  const { patient, category } = req.query;
-  if (!patient || !category) {
+  const { patientId, category } = req.query;
+  if (!patientId || !category) {
     return res.status(400).json({
       error: "Missing required query parameters: patient, consent category",
     });
   }
 
-  const patientIdNoPrefix = patient.replace(/^Patient\//, "");
+  const patientIdNoPrefix = patientId.replace(/^Patient\//, "");
 
   try {
     const consents = await fhirGetActivePatientConsents(
@@ -94,22 +120,18 @@ export const createPatientHandler = async (req, res) => {
   const {
     kv,
     insuranceType,
-    familyName,
-    givenNames,
+    name,
     gender,
     birthday,
     address,
+    telecom,
+    maritalStatus,
+    communication,
+    contact,
   } = req.body;
-  console.log(kv);
-  console.log(insuranceType);
-  console.log(familyName);
-  console.log(givenNames);
-  console.log(gender);
-  console.log(birthday);
-  console.log(address);
 
   console.log(JSON.stringify(req.body));
-  if (!kv || !insuranceType || !familyName || !givenNames) {
+  if (!kv || !insuranceType || !name[0].family || !name[0].given) {
     return res.status(400).json({
       error:
         "Missing required fields. Require KV, insurance type, family name, given name!",
@@ -119,7 +141,7 @@ export const createPatientHandler = async (req, res) => {
   console.log("test");
   try {
     const result = await fhirPostPatient(newPatient);
-    res.status(200).json(result);
+    res.status(201).json(result);
   } catch (e) {
     console.error(e);
     res.status(e.response?.status ?? 502).json({

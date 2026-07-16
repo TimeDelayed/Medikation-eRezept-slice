@@ -49,6 +49,7 @@ export const createFhirPatient = ({
     identifier: [identifier],
     name: [
       {
+        use: "official",
         family: familyName,
         given: givenNames,
       },
