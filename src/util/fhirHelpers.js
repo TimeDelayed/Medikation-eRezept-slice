@@ -74,3 +74,34 @@ export const createPatientRef = (patientId) => ({
 export const createMedicationRef = (medicationId) => ({
   reference: `Medication/${medicationId}`,
 });
+
+/**
+ * Creates a FHIR Address.
+ *
+ * Required:
+ * - street
+ * - houseNumber
+ * - postalCode
+ * - city
+ *
+ * Optional:
+ * - country (default: DE)
+ * - use (default: home)
+ * - type (default: both)
+ */
+export const createFhirAddress = ({
+  street,
+  houseNumber,
+  postalCode,
+  city,
+  country = "DE",
+  use = "home",
+  type = "both",
+}) => ({
+  use,
+  type,
+  line: [`${street} ${houseNumber}`],
+  city,
+  postalCode,
+  country,
+});
