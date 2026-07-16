@@ -52,7 +52,7 @@ export const fhirGetPatientByIdentifier = async (identifier) => {
  *
  * https://hl7.org/fhir/R4/patient.html#search
  */
-export const fhirSearchPatientsByDemographics = async ({
+export const fhirGetPatientsByDemographics = async ({
   familyName,
   givenName,
   birthday,
