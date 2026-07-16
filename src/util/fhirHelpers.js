@@ -68,6 +68,33 @@ export const createPatientRef = (patientId) => ({
   reference: `Patient/${patientId}`,
 });
 
+
+export const patientsTieBreaker = (patients, familyName, givenName, birthday, address, gender) => {
+  // Tie-breaker logic to find the best match among multiple patients
+  const matchingPatients = patients.filter((patient) => {
+    const patientAddress = patient.address?.[0];
+    const patientBirthday = patient.birthDate;
+    const patientGender = patient.gender;
+    const patientFamilyName = patientName?.family;
+    const patientGivenName = patientName?.given?.[0];
+    return (
+      patientFamilyName === familyName &&
+      patientGivenName === givenName &&
+      patientBirthday === birthday &&
+      patientAddress === address &&
+      patientGender === gender
+    );
+  });
+
+  if (matchingPatients.length === 1) {
+    return matchingPatients[0];
+  } else if (matchingPatients.length > 1) {
+    throw new Error("Multiple patients match the provided data!");
+  } else {
+    throw new Error("No patients match the provided data!");
+  }
+}
+
 /**
  * Creates a Medication reference.
  */
