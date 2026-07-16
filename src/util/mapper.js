@@ -1,76 +1,33 @@
-import { SYSTEMNAME } from "../fhirClient/fhir-client.js";
+import {
+  createFhirIdentifier,
+  createFhirCodeableConcept,
+  createPatientRef,
+  createMedicationRef,
+} from "./fhirHelpers.js";
 
-// fhir helper
-export const createFhirIdentifier = (id, insuranceType) => {
-  let insuranceURI = null;
-  if (insuranceType === "GKV") {
-    insuranceURI = "http://fhir.de/sid/gkv/kvid-10";
-  } else if (insuranceType === "PKV") {
-    insuranceURI = "http://fhir.de";
-  } else {
-    throw new Error("Wrong insuranceType, please use GKV or PKV!");
-  }
-  return {
-    type: {
-      coding: [
-        {
-          system: "http://hl7.org",
-          code: "KV",
-          display: "National health plan identifier",
-        },
-      ],
-    },
-    system: insuranceURI,
-    value: id,
-  };
-};
-
-export const createFhirCategory = (code, namespace) => {
-  let breaker = "/";
-  if (SYSTEMNAME.endsWith("/")) {
-    breaker = "";
-  }
-  return {
-    coding: [
-      {
-        system: SYSTEMNAME + breaker + namespace,
-        code: code,
-      },
-    ],
-  };
-};
-
-// https://coreui.io/answers/how-to-generate-uuid-in-javascript/
-const createNewId = () => {
-  const uuid = crypto.randomUUID();
-  return uuid;
-};
-
-const createPatientRef = (id) => ({
-  reference: `Patient/${id}`,
-});
+import { CONSENT_SCOPE_SYSTEM } from "../constants/fhirConstants.js";
 
 /**
- * https://hl7.org/fhir/R4/patient.html
- *
  * Creates a FHIR Patient.
  *
  * Required:
- * - kv
- * - insuranceType
- * - familyName
- * - givenNames
+ * - kv: Insurance identifier value (string), e.g. "A123456789"
+ * - insuranceType: "GKV" | "PKV"
+ * - familyName: Family name (string)
+ * - givenNames: Given names as an array of strings, e.g. ["Max", "Paul"]
  *
  * Optional:
- * - gender
- * - birthday
- * - address
- * - telecom
- * - maritalStatus
- * - communication
- * - contact
+ * - gender: "male" | "female" | "other" | "unknown"
+ * - birthday: FHIR date in YYYY-MM-DD format
+ * - address: Array of FHIR Address objects
+ * - telecom: Array of FHIR ContactPoint objects
+ * - maritalStatus: FHIR CodeableConcept
+ * - communication: Array of Patient.communication objects
+ * - contact: Array of Patient.contact objects
  *
  * Only provided optional values are included.
+ *
+ * https://hl7.org/fhir/R4/patient.html
  */
 export const createFhirPatient = ({
   kv,
@@ -85,11 +42,11 @@ export const createFhirPatient = ({
   communication,
   contact,
 }) => {
-  const newIdentifier = createFhirIdentifier({ kv, insuranceType });
+  const identifier = createFhirIdentifier(kv, insuranceType);
 
   const patient = {
     resourceType: "Patient",
-    identifier: [newIdentifier],
+    identifier: [identifier],
     name: [
       {
         family: familyName,
@@ -98,13 +55,33 @@ export const createFhirPatient = ({
     ],
   };
 
-  if (gender) patient.gender = gender;
-  if (birthday) patient.birthDate = birthday;
-  if (address) patient.address = address;
-  if (telecom) patient.telecom = telecom;
-  if (maritalStatus) patient.maritalStatus = maritalStatus;
-  if (communication) patient.communication = communication;
-  if (contact) patient.contact = contact;
+  if (gender) {
+    patient.gender = gender;
+  }
+
+  if (birthday) {
+    patient.birthDate = birthday;
+  }
+
+  if (address) {
+    patient.address = address;
+  }
+
+  if (telecom) {
+    patient.telecom = telecom;
+  }
+
+  if (maritalStatus) {
+    patient.maritalStatus = maritalStatus;
+  }
+
+  if (communication) {
+    patient.communication = communication;
+  }
+
+  if (contact) {
+    patient.contact = contact;
+  }
 
   return patient;
 };
@@ -112,7 +89,7 @@ export const createFhirPatient = ({
 /**
  * Updates an existing FHIR Patient resource.
  *
- * Expected updates (all optional):
+ * Expected updates, all optional:
  * - gender
  * - birthday
  * - address
@@ -122,52 +99,84 @@ export const createFhirPatient = ({
  * - contact
  *
  * Only provided fields overwrite the existing patient resource.
+ *
+ * https://hl7.org/fhir/R4/patient.html
  */
 export const updateFhirPatient = (patient, updates) => {
-  const updatedPatient = { ...patient };
+  const updatedPatient = {
+    ...patient,
+  };
 
-  if (updates.gender) updatedPatient.gender = updates.gender;
-  if (updates.birthday) updatedPatient.birthDate = updates.birthday;
-  if (updates.address) updatedPatient.address = updates.address;
-  if (updates.telecom) updatedPatient.telecom = updates.telecom;
-  if (updates.maritalStatus)
+  if (updates.gender) {
+    updatedPatient.gender = updates.gender;
+  }
+
+  if (updates.birthday) {
+    updatedPatient.birthDate = updates.birthday;
+  }
+
+  if (updates.address) {
+    updatedPatient.address = updates.address;
+  }
+
+  if (updates.telecom) {
+    updatedPatient.telecom = updates.telecom;
+  }
+
+  if (updates.maritalStatus) {
     updatedPatient.maritalStatus = updates.maritalStatus;
-  if (updates.communication)
+  }
+
+  if (updates.communication) {
     updatedPatient.communication = updates.communication;
-  if (updates.contact) updatedPatient.contact = updates.contact;
+  }
+
+  if (updates.contact) {
+    updatedPatient.contact = updates.contact;
+  }
 
   return updatedPatient;
 };
 
 /**
- * https://hl7.org/fhir/R4/patient.html
+ * Creates a minimal FHIR Consent.
+ *
+ * Required:
+ * - patientId
+ * - category
+ * - status
+ *
+ * https://hl7.org/fhir/R4/consent.html
  */
 export const createFhirConsent = ({ patientId, category, status }) => {
   return {
     resourceType: "Consent",
-    status: status,
+    status,
     scope: {
       coding: [
         {
-          system: "http://terminology.hl7.org/CodeSystem/consentscope",
+          system: CONSENT_SCOPE_SYSTEM,
           code: "patient-privacy",
         },
       ],
     },
-    category: [createFhirCategory(category, "consent-type")],
-    patient: {
-      reference: createPatientRef(patientId),
-    },
+    category: [createFhirCodeableConcept(category, "consent-type")],
+    patient: createPatientRef(patientId),
     dateTime: new Date().toISOString(),
   };
 };
 
 /**
- * https://hl7.org/fhir/R4/condition.html
+ * Creates a minimal FHIR Condition.
  *
- * Minimal for our use case:
- * - subject
- * - code
+ * Required:
+ * - patientId
+ * - conditionCode
+ *
+ * Optional:
+ * - diagnosis
+ *
+ * https://hl7.org/fhir/R4/condition.html
  */
 export const createFhirCondition = ({
   patientId,
@@ -177,25 +186,41 @@ export const createFhirCondition = ({
   return {
     resourceType: "Condition",
     subject: createPatientRef(patientId),
-    code: {
-      coding: [
-        {
-          system: `${SYSTEMNAME}/CodeSystem/condition`,
-          code: conditionCode,
-          display: diagnosis,
-        },
-      ],
-    },
+    code: createFhirCodeableConcept(conditionCode, "condition", diagnosis),
   };
 };
 
 /**
- * https://hl7.org/fhir/R4/medicationstatement.html
+ * Creates a minimal FHIR Medication.
  *
  * Required:
+ * - medicationCode
+ *
+ * Optional:
+ * - medicationName
+ *
+ * https://hl7.org/fhir/R4/medication.html
+ */
+export const createFhirMedication = ({ medicationCode, medicationName }) => {
+  return {
+    resourceType: "Medication",
+    code: createFhirCodeableConcept(
+      medicationCode,
+      "medication",
+      medicationName,
+    ),
+  };
+};
+
+/**
+ * Creates a minimal FHIR MedicationStatement.
+ *
+ * Required:
+ * - patientId
  * - status
- * - medication[x]
- * - subject
+ * - medicationId
+ *
+ * https://hl7.org/fhir/R4/medicationstatement.html
  */
 export const createFhirMedicationStatement = ({
   patientId,
@@ -205,25 +230,47 @@ export const createFhirMedicationStatement = ({
   return {
     resourceType: "MedicationStatement",
     status,
-    medicationReference: {
-      reference: `Medication/${medicationId}`,
-    },
+    medicationReference: createMedicationRef(medicationId),
     subject: createPatientRef(patientId),
   };
 };
 
 /**
- * https://hl7.org/fhir/R4/provenance.html
+ * Creates a minimal FHIR MedicationRequest.
  *
  * Required:
- * - target
- * - recorded
- * - agent
+ * - patientId
+ * - medicationId
+ * - status
+ * - intent
+ *
+ * https://hl7.org/fhir/R4/medicationrequest.html
  */
-export const createFhirProvenance = ({
-  targetReference,
-  agentReference,
+export const createFhirMedicationRequest = ({
+  patientId,
+  medicationId,
+  status,
+  intent,
 }) => {
+  return {
+    resourceType: "MedicationRequest",
+    status,
+    intent,
+    medicationReference: createMedicationRef(medicationId),
+    subject: createPatientRef(patientId),
+  };
+};
+
+/**
+ * Creates a minimal FHIR Provenance.
+ *
+ * Required:
+ * - targetReference
+ * - agentReference
+ *
+ * https://hl7.org/fhir/R4/provenance.html
+ */
+export const createFhirProvenance = ({ targetReference, agentReference }) => {
   return {
     resourceType: "Provenance",
     target: [
@@ -243,59 +290,12 @@ export const createFhirProvenance = ({
 };
 
 /**
- * https://hl7.org/fhir/R4/medication.html
+ * Creates a FHIR transaction Bundle.
  *
- * Medication itself has no mandatory content fields,
- * but code is required for it to be useful.
- */
-export const createFhirMedication = ({
-  medicationCode,
-  medicationName,
-}) => {
-  return {
-    resourceType: "Medication",
-    code: {
-      coding: [
-        {
-          system: `${SYSTEMNAME}/CodeSystem/medication`,
-          code: medicationCode,
-          display: medicationName,
-        },
-      ],
-    },
-  };
-};
-
-/**
- * https://hl7.org/fhir/R4/medicationrequest.html
+ * Every resource is submitted using POST.
+ * The transaction is atomic: either all entries succeed or none do.
  *
- * Required:
- * - status
- * - intent
- * - medication[x]
- * - subject
- */
-export const createFhirMedicationRequest = ({
-  patientId,
-  medicationId,
-  status,
-  intent,
-}) => {
-  return {
-    resourceType: "MedicationRequest",
-    status,
-    intent,
-    medicationReference: {
-      reference: `Medication/${medicationId}`,
-    },
-    subject: createPatientRef(patientId),
-  };
-};
-
-/**
  * https://hl7.org/fhir/R4/bundle.html
- *
- * Minimal transaction bundle.
  */
 export const createFhirTransactionBundle = (resources) => {
   return {
