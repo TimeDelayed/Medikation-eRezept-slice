@@ -4,7 +4,7 @@ import {
   GKV_IDENTIFIER_SYSTEM,
   PKV_IDENTIFIER_SYSTEM,
   IDENTIFIER_TYPE_SYSTEM,
-} from "./fhirConstants.js";
+} from "../constants/fhirConstants.js";
 
 /**
  * Returns the identifier system URI.
