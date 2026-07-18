@@ -1,6 +1,9 @@
 import axios from "axios";
 
-import { FHIR_BASE_URL } from "../constants/fhirConstants.js";
+import {
+  ANAMNESIS_CONSENT_CATEGORY_TOKEN,
+  FHIR_BASE_URL,
+} from "../constants/fhirConstants.js";
 
 const getEntries = (bundle) => (bundle.entry ?? []).map((e) => e.resource);
 
@@ -130,59 +133,94 @@ export const fhirPostCondition = async (newCondition) => {
 
 // ---------- Consent ----------
 
-export const fhirGetConsentById = async (consentId) => {
+/**
+ * Returns all active anamnesis Consents for a patient.
+ *
+ * Normally, zero or one resource should be returned.
+ * An array is retained so duplicate data can be detected.
+ */
+export const fhirGetActiveAnamnesisConsents =
+  async (patientId) => {
+    requireValue(patientId, "patientId");
+
+    const result = await fhir.get("/Consent", {
+      params: {
+        patient: patientId,
+        category:
+          ANAMNESIS_CONSENT_CATEGORY_TOKEN,
+        status: "active",
+      },
+    });
+
+    return getEntries(result.data);
+  };
+
+/**
+ * Returns all historical and current anamnesis
+ * Consents for a patient.
+ */
+export const fhirGetAllAnamnesisConsents =
+  async (patientId) => {
+    requireValue(patientId, "patientId");
+
+    const result = await fhir.get("/Consent", {
+      params: {
+        patient: patientId,
+        category:
+          ANAMNESIS_CONSENT_CATEGORY_TOKEN,
+      },
+    });
+
+    return getEntries(result.data);
+  };
+
+/**
+ * Returns one Consent by its FHIR resource id.
+ */
+export const fhirGetConsentById = async (
+  consentId,
+) => {
   requireValue(consentId, "consentId");
 
-  const result = await fhir.get(`/Consent/${consentId}`);
+  const result = await fhir.get(
+    `/Consent/${consentId}`,
+  );
 
   return result.data;
 };
 
-export const fhirGetAllConsentsByPatientId = async (
-  patientId,
-  category,
+/**
+ * Creates a standalone Consent resource.
+ *
+ * Prefer a transaction Bundle when an existing active
+ * Consent must be deactivated at the same time.
+ */
+export const fhirPostConsent = async (
+  consent,
 ) => {
-  requireValue(patientId, "patientId");
+  requireValue(consent, "consent");
 
-  const params = {
-    patient: patientId,
-  };
+  const result = await fhir.post(
+    "/Consent",
+    consent,
+  );
 
-  if (category) {
-    params.category = category;
-  }
-
-  const result = await fhir.get("/Consent", { params });
-
-  return getEntries(result.data);
+  return result.data;
 };
 
-export const fhirGetCurrentPatientConsents = async (
-  patientId,
-  category,
+/**
+ * Updates an existing Consent resource.
+ */
+export const fhirPutConsent = async (
+  consent,
 ) => {
-  requireValue(patientId, "patientId");
+  requireValue(consent, "consent");
+  requireValue(consent.id, "consent.id");
 
-  const params = {
-    patient: patientId,
-    status: "active",
-  };
-
-  if (category) {
-    params.category = category;
-  }
-
-  const result = await fhir.get("/Consent", {
-    params,
-  });
-
-  return getEntries(result.data);
-};
-
-export const fhirPostConsent = async (newConsent) => {
-  requireValue(newConsent, "newConsent");
-
-  const result = await fhir.post("/Consent", newConsent);
+  const result = await fhir.put(
+    `/Consent/${consent.id}`,
+    consent,
+  );
 
   return result.data;
 };
@@ -300,12 +338,26 @@ export const fhirPostProvenance = async (newProvenance) => {
   return result.data;
 };
 
-// ---------- Bundle ----------
+// ---------- Transaction Bundle ----------
 
-export const fhirPostTransactionBundle = async (transactionBundle) => {
-  requireValue(transactionBundle, "transactionBundle");
+/**
+ * Executes a FHIR transaction Bundle.
+ *
+ * The Bundle must be posted to the FHIR base endpoint,
+ * not to /Bundle.
+ */
+export const fhirPostTransactionBundle = async (
+  transactionBundle,
+) => {
+  requireValue(
+    transactionBundle,
+    "transactionBundle",
+  );
 
-  const result = await fhir.post("/", transactionBundle);
+  const result = await fhir.post(
+    "/",
+    transactionBundle,
+  );
 
   return result.data;
 };

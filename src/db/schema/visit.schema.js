@@ -17,30 +17,14 @@ const visitSchema = new Schema({
   },
   patientFhirId: {
     type: String,
-    required: false,
+    required: true,
   },
   //https://stackoverflow.com/questions/29299477/how-to-create-and-use-enum-in-mongoose
   visitStatus: {
     type: String,
-    enum : ["started","inProgress", "done"],
+    enum : ["started","amnesisIsCompleted", "completed"],
     required: true,
     default: "started",
-  },
-  //consent
-  consent: {
-    haveConsent: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-    fhirConsentId: {
-      type: String,
-      required: false,
-    },
-    gotConsentAt: {
-      type: Date,
-      required: false,
-    },
   },
   // anamnesis (übergangsweise zum speichern (löschung,wenn consent nicht vorhanden))
   anamnesis : {

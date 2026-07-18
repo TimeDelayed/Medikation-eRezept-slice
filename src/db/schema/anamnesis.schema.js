@@ -14,11 +14,6 @@ const anamnesisSchema = new Schema({
     type: String,
     required: true,
   },
-  // needs a visitId
-  visitId : {
-    type: String,
-    required: true,
-  },
   preexistingConditions: [{
     code: String,
     display : String,
@@ -27,9 +22,21 @@ const anamnesisSchema = new Schema({
     code: String,
     display : String,
   }],
-  sendToFhir: {
+  fhirSubmittedAt: {
     type: Date,
     required: false,
+  },
+  //consent
+  consent: {
+    decision: {
+      type: String,
+      enum: ["permit", "deny"],
+      required: true,
+    },
+
+    fhirConsentId: String,
+
+    decidedAt: Date,
   },
 }, { timestamps: true });
 

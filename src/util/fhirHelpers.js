@@ -64,9 +64,93 @@ export const createFhirCodeableConcept = (code, namespace, display) => ({
 /**
  * Creates a Patient reference.
  */
-export const createPatientRef = (patientId) => ({
-  reference: `Patient/${patientId}`,
-});
+export const createPatientRef = (patientId) => (
+  createFhirReference("Patient", patientId)
+);
+
+/**
+ * Creates a FHIR reference.
+ *
+ * Example:
+ * createFhirReference("Patient", "123")
+ * -> { reference: "Patient/123" }
+ */
+export const createFhirReference = (
+  resourceType,
+  resourceId,
+) => {
+  return {
+    reference: `${resourceType}/${resourceId}`,
+  };
+};
+
+/**
+ * Creates a FHIR Medication reference.
+ */
+export const createMedicationRef = (medicationId) => {
+  return createFhirReference(
+    "Medication",
+    medicationId,
+  );
+};
+
+/**
+ * Creates a FHIR Consent reference.
+ */
+export const createConsentRef = (consentId) => {
+  return createFhirReference("Consent", consentId);
+};
+
+/**
+ * Creates a FHIR transaction entry for a new resource.
+ */
+export const createPostEntry = (resource) => {
+  return {
+    resource,
+    request: {
+      method: "POST",
+      url: resource.resourceType,
+    },
+  };
+};
+
+/**
+ * Creates a FHIR transaction entry for updating
+ * an existing resource.
+ */
+export const createPutEntry = (resource) => {
+  if (!resource?.resourceType || !resource?.id) {
+    throw new Error(
+      "PUT transaction entries require resourceType and id.",
+    );
+  }
+
+  return {
+    resource,
+    request: {
+      method: "PUT",
+      url: `${resource.resourceType}/${resource.id}`,
+    },
+  };
+};
+
+/**
+ * Returns an inactive copy of an existing Consent.
+ *
+ * The original object is not modified.
+ */
+export const deactivateConsent = (consent) => {
+  if (!consent?.id) {
+    throw new Error(
+      "A persisted Consent with an id is required.",
+    );
+  }
+
+  return {
+    ...consent,
+    status: "inactive",
+  };
+};
 
 const addressMatches = (patientAddress, address) => {
   if (!patientAddress || !address) {
@@ -120,13 +204,6 @@ export const patientsTieBreaker = (
 
   return matchingPatients[0];
 };
-
-/**
- * Creates a Medication reference.
- */
-export const createMedicationRef = (medicationId) => ({
-  reference: `Medication/${medicationId}`,
-});
 
 /**
  * Creates a FHIR Address.

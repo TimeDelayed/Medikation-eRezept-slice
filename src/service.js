@@ -24,10 +24,6 @@ const main = async () => {
   const db = await mongoose.connect("mongodb://127.0.0.1:27017/fhir");
   console.log("Connected ...");
 
-  const visit = await Visit.create({ kv: "test", patientId: 1, date: new Date() });
-  visit.save();
-  console.log(visit);
-
   service.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
   });

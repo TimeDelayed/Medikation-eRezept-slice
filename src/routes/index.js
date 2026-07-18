@@ -3,13 +3,9 @@ import { handleDummyLogin, securityMiddleware } from "../auth/auth.js";
 import { addAuditOptions } from "../audit/addAuditOptionsMiddelware.js";
 import { auditMiddleware } from "../audit/auditMiddleWare.js";
 import {
-  checkConsentHandler,
-  createPatientHandler,
   createVisitHandler,
-  recordConsentHandler,
-  searchPatientHandler,
-  submitAnamnesisHandler,
-} from "../controller/intakeController.js";
+  /*submitAnamnesisHandler*/
+} from "../controller/anamnesisController.js";
 import {
   createPrescriptionHandler,
   finalizeVisitHandler,
@@ -55,81 +51,18 @@ router.post("/login", addAuditOptions("Login", ResourceType.USER), handleDummyLo
 // middleware
 // router.use(securityMiddleware);
 
-// ---------- Patient ----------
-
 /**
  * @openapi
  * /Patient:
- *   get:
- *     tags:
- *       - Patient
- *     summary: Searches for a patient.
- *     description: >
- *       Searches either by insurance identifier (kv) or by demographic information.
- *       If 'kv' is provided, identifier search is performed.
- *       Otherwise demographic search is used.
- *     parameters:
- *       - in: query
- *         name: insuranceType
- *         schema:
- *           type: string
- *           enum: [GKV, PKV]
- *         description: Insurance identifier (GKV / PKV).
- *       - in: query
- *         name: kv
- *         schema:
- *           type: string
- *         description: Insurance number (A123456789)
- *       - in: query
- *         name: familyName
- *         schema:
- *           type: string
- *       - in: query
- *         name: givenName
- *         schema:
- *           type: string
- *       - in: query
- *         name: birthday
- *         schema:
- *           type: string
- *           format: date
- *       - in: query
- *         name: gender
- *         schema:
- *           type: string
- *           enum: [male, female, other, unknown]
- *       - in: query
- *         name: address
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Matching patient returned.
- *       404:
- *         description: Patient not found.
- *       409:
- *         description: Multiple patients matched the demographic search.
- */
-router.get("/Patient", addAuditOptions("search", ResourceType.PATIENT), searchPatientHandler);
-
-/**
- * @openapi
- * /Patient/consents:
  *   post:
  *     tags:
- *       - Patient consent
- *     summary: Records a patient consent decision.
+ *       - Visit
+ *     summary: Starts a new patient visit.
  *     description: >
- *       Records a new Consent decision.
- *
- *       If no active Consent of the requested category exists, a new active
- *       Consent is created.
- *
- *       If an active Consent with a different decision exists, it is first
- *       marked as inactive and a new active Consent is created.
- *
- *       If an active Consent with the same decision already exists,
- *       the request fails with HTTP 409 Conflict.
+ *       Searches for an existing FHIR Patient using the insurance identifier
+ *       and demographic information. If no matching Patient exists, a new
+ *       FHIR Patient is created. A local Visit is then stored with the
+ *       resulting FHIR Patient id.
  *     requestBody:
  *       required: true
  *       content:
@@ -137,129 +70,48 @@ router.get("/Patient", addAuditOptions("search", ResourceType.PATIENT), searchPa
  *           schema:
  *             type: object
  *             required:
- *               - patientId
- *               - category
- *               - decision
+ *               - kv
+ *               - insuranceType
+ *               - familyName
+ *               - givenNames
+ *               - birthday
+ *               - address
+ *               - gender
  *             properties:
- *               patientId:
+ *               kv:
  *                 type: string
- *                 description: FHIR Patient id.
- *               category:
+ *                 example: "A123456789"
+ *               insuranceType:
  *                 type: string
- *                 description: Consent category.
- *               decision:
+ *                 enum: [GKV, PKV]
+ *               familyName:
  *                 type: string
- *                 enum:
- *                   - permit
- *                   - deny
- *                 description: Consent decision.
+ *                 example: "Mustermann"
+ *               givenNames:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["Max"]
+ *               birthday:
+ *                 type: string
+ *                 format: date
+ *                 example: "1998-06-15"
+ *               address:
+ *                 type: string
+ *                 example: "Musterstraße 1, 12345 Berlin"
+ *               gender:
+ *                 type: string
+ *                 enum: [male, female, other, unknown]
  *     responses:
  *       201:
- *         description: Consent created successfully.
+ *         description: Visit successfully created.
  *       400:
- *         description: Invalid request body.
- *       409:
- *         description: An active Consent with the same decision already exists.
+ *         description: Required patient information is missing.
+ *       502:
+ *         description: FHIR Patient lookup or creation failed.
  */
-router.post("/Patient/consents", recordConsentHandler);
+router.post("/Patient", addAuditOptions("create", ResourceType.VISIT), createVisitHandler);
 
-/**
- * @openapi
- * /Patient:
- *   post:
- *     tags:
- *       - Patient
- *     summary: Creates a new patient.
- *     description: >
- *       Creates a FHIR Patient with the mandatory patient information.
- *       Additional patient information can later be added through the anamnesis workflow.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: "#/components/schemas/PatientCreate"
- *     responses:
- *       201:
- *         description: Patient successfully created.
- *       400:
- *         description: Missing required patient data.
- */
-router.post("/Patient",addAuditOptions("create", ResourceType.PATIENT), createPatientHandler);
-
-// ---------- Visit ----------
-
-/**
- * @openapi
- * /visits:
- *   post:
- *     tags:
- *       - Visit
- *     summary: Creates a new local visit.
- *     description: Creates a local visit referencing an existing patient.
- *     requestBody:
- *       required: true
- *     responses:
- *       201:
- *         description: Visit created successfully.
- */
-router.post("/visits",addAuditOptions("create", ResourceType.VISIT), createVisitHandler);
-
-// ---------- Consent ----------
-
-/**
- * @openapi
- * /visits/{visitId}/consent:
- *   get:
- *     tags:
- *       - Consent
- *     summary: Checks whether an active consent exists.
- *     parameters:
- *       - in: path
- *         name: visitId
- *         required: true
- *         schema:
- *           type: string
- *       - in: query
- *         name: patient
- *         required: true
- *         schema:
- *           type: string
- *         description: FHIR Patient reference.
- *       - in: query
- *         name: category
- *         required: true
- *         schema:
- *           type: string
- *         description: Consent category.
- *     responses:
- *       200:
- *         description: Matching active consent(s).
- *       400:
- *         description: Missing query parameters.
- */
-router.get("/visits/:visitId/consent", addAuditOptions("Read", ResourceType.CONSENT), checkConsentHandler);
-
-/**
- * @openapi
- * /visits/{visitId}/consent:
- *   post:
- *     tags:
- *       - Consent
- *     summary: Records a patient consent.
- *     parameters:
- *       - in: path
- *         name: visitId
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *     responses:
- *       201:
- *         description: Consent recorded successfully.
- */
-router.post("/visits/:visitId/consent", addAuditOptions("create", ResourceType.CONSENT), recordConsentHandler);
 
 // ---------- Anamnesis ----------
 
@@ -282,8 +134,8 @@ router.post("/visits/:visitId/consent", addAuditOptions("create", ResourceType.C
  *     responses:
  *       200:
  *         description: Anamnesis submitted successfully.
- */
-router.post("/visits/:visitId/anamnesis", addAuditOptions("Update Visit", ResourceType.VISIT), submitAnamnesisHandler);
+ *
+router.post("/visits/:visitId/anamnesis", addAuditOptions("Update Visit", ResourceType.VISIT), submitAnamnesisHandler);*/
 
 // ---------- Medication ----------
 

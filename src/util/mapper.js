@@ -1,31 +1,39 @@
 import {
+  ANAMNESIS_CONSENT_CATEGORY,
+  ANAMNESIS_CONSENT_DISPLAY,
+  CONSENT_CODESYSTEM_NAME,
+  CONSENT_DECISIONS,
+  CONSENT_SCOPE_SYSTEM,
+  CONSENT_STATUS_ACTIVE,
+} from "../constants/fhirConstants.js";
+
+import {
   createFhirIdentifier,
   createFhirCodeableConcept,
   createPatientRef,
   createMedicationRef,
+  createPostEntry,
+  createPutEntry,
+  deactivateConsent,
 } from "./fhirHelpers.js";
-
-import { CONSENT_SCOPE_SYSTEM } from "../constants/fhirConstants.js";
 
 /**
  * Creates a FHIR Patient.
  *
  * Required:
- * - kv: Insurance identifier value (string), e.g. "A123456789"
- * - insuranceType: "GKV" | "PKV"
- * - familyName: Family name (string)
- * - givenNames: Given names as an array of strings, e.g. ["Max", "Paul"]
+ * - kv
+ * - insuranceType
+ * - familyName
+ * - givenNames
  *
  * Optional:
- * - gender: "male" | "female" | "other" | "unknown"
- * - birthday: FHIR date in YYYY-MM-DD format
- * - address: Array of FHIR Address objects
- * - telecom: Array of FHIR ContactPoint objects
- * - maritalStatus: FHIR CodeableConcept
- * - communication: Array of Patient.communication objects
- * - contact: Array of Patient.contact objects
- *
- * Only provided optional values are included.
+ * - gender
+ * - birthday
+ * - address
+ * - telecom
+ * - maritalStatus
+ * - communication
+ * - contact
  *
  * https://hl7.org/fhir/R4/patient.html
  */
@@ -42,11 +50,11 @@ export const createFhirPatient = ({
   communication,
   contact,
 }) => {
-  const identifier = createFhirIdentifier(kv, insuranceType);
-
   const patient = {
     resourceType: "Patient",
-    identifier: [identifier],
+    identifier: [
+      createFhirIdentifier(kv, insuranceType),
+    ],
     name: [
       {
         use: "official",
@@ -59,27 +67,21 @@ export const createFhirPatient = ({
   if (gender) {
     patient.gender = gender;
   }
-
   if (birthday) {
     patient.birthDate = birthday;
   }
-
   if (address) {
     patient.address = address;
   }
-
   if (telecom) {
     patient.telecom = telecom;
   }
-
   if (maritalStatus) {
     patient.maritalStatus = maritalStatus;
   }
-
   if (communication) {
     patient.communication = communication;
   }
-
   if (contact) {
     patient.contact = contact;
   }
@@ -88,105 +90,56 @@ export const createFhirPatient = ({
 };
 
 /**
- * Updates an existing FHIR Patient resource.
- *
- * Expected updates, all optional:
- * - gender
- * - birthday
- * - address
- * - telecom
- * - maritalStatus
- * - communication
- * - contact
- *
- * Only provided fields overwrite the existing patient resource.
- *
- * https://hl7.org/fhir/R4/patient.html
- */
-export const updateFhirPatient = (patient, updates) => {
-  const updatedPatient = {
-    ...patient,
-  };
-
-  if (updates.gender) {
-    updatedPatient.gender = updates.gender;
-  }
-
-  if (updates.birthday) {
-    updatedPatient.birthDate = updates.birthday;
-  }
-
-  if (updates.address) {
-    updatedPatient.address = updates.address;
-  }
-
-  if (updates.telecom) {
-    updatedPatient.telecom = updates.telecom;
-  }
-
-  if (updates.maritalStatus) {
-    updatedPatient.maritalStatus = updates.maritalStatus;
-  }
-
-  if (updates.communication) {
-    updatedPatient.communication = updates.communication;
-  }
-
-  if (updates.contact) {
-    updatedPatient.contact = updates.contact;
-  }
-
-  return updatedPatient;
-};
-
-/**
- * Creates a minimal FHIR Consent.
+ * Creates a minimal FHIR Consent for sharing
+ * anamnesis data via FHIR.
  *
  * Required:
  * - patientId
- * - category
- * - decision ("permit" | "deny")
+ * - decision: "permit" | "deny"
  *
- * Every newly created Consent is active.
+ * Every newly created Consent represents the currently
+ * applicable decision and therefore has status "active".
  *
  * https://hl7.org/fhir/R4/consent.html
  */
-export const createFhirConsent = ({
+export const createFhirAnamnesisConsent = ({
   patientId,
-  category,
   decision,
-}) => ({
-  resourceType: "Consent",
-  status: "active",
-  scope: {
-    coding: [
-      {
-        system: CONSENT_SCOPE_SYSTEM,
-        code: "patient-privacy",
-      },
+}) => {
+  if (!CONSENT_DECISIONS.includes(decision)) {
+    throw new Error(
+      "Consent decision must be \"permit\" or \"deny\".",
+    );
+  }
+
+  return {
+    resourceType: "Consent",
+    status: CONSENT_STATUS_ACTIVE,
+    scope: {
+      coding: [
+        {
+          system: CONSENT_SCOPE_SYSTEM,
+          code: "patient-privacy",
+        },
+      ],
+    },
+    category: [
+      createFhirCodeableConcept(
+        ANAMNESIS_CONSENT_CATEGORY,
+        CONSENT_CODESYSTEM_NAME,
+        ANAMNESIS_CONSENT_DISPLAY,
+      ),
     ],
-  },
-  category: [
-    createFhirCodeableConcept(category, "consent-type"),
-  ],
-  patient: createPatientRef(patientId),
-  dateTime: new Date().toISOString(),
-  provision: {
-    type: decision,
-  },
-});
+    patient: createPatientRef(patientId),
+    dateTime: new Date().toISOString(),
+    provision: {
+      type: decision,
+    },
+  };
+};
 
 /**
  * Creates a minimal FHIR Condition.
- *
- * Required:
- * - patientId
- * - conditionCode
- *
- * Optional:
- * - diagnosis
- *
- * https://hl7.org/fhir/R4/condition.html
  */
 export const createFhirCondition = ({
   patientId,
@@ -196,22 +149,21 @@ export const createFhirCondition = ({
   return {
     resourceType: "Condition",
     subject: createPatientRef(patientId),
-    code: createFhirCodeableConcept(conditionCode, "condition", diagnosis),
+    code: createFhirCodeableConcept(
+      conditionCode,
+      "condition",
+      diagnosis,
+    ),
   };
 };
 
 /**
  * Creates a minimal FHIR Medication.
- *
- * Required:
- * - medicationCode
- *
- * Optional:
- * - medicationName
- *
- * https://hl7.org/fhir/R4/medication.html
  */
-export const createFhirMedication = ({ medicationCode, medicationName }) => {
+export const createFhirMedication = ({
+  medicationCode,
+  medicationName,
+}) => {
   return {
     resourceType: "Medication",
     code: createFhirCodeableConcept(
@@ -224,13 +176,6 @@ export const createFhirMedication = ({ medicationCode, medicationName }) => {
 
 /**
  * Creates a minimal FHIR MedicationStatement.
- *
- * Required:
- * - patientId
- * - status
- * - medicationId
- *
- * https://hl7.org/fhir/R4/medicationstatement.html
  */
 export const createFhirMedicationStatement = ({
   patientId,
@@ -240,83 +185,127 @@ export const createFhirMedicationStatement = ({
   return {
     resourceType: "MedicationStatement",
     status,
-    medicationReference: createMedicationRef(medicationId),
+    medicationReference:
+      createMedicationRef(medicationId),
     subject: createPatientRef(patientId),
   };
 };
 
 /**
- * Creates a minimal FHIR MedicationRequest.
- *
- * Required:
- * - patientId
- * - medicationId
- * - status
- * - intent
- *
- * https://hl7.org/fhir/R4/medicationrequest.html
+ * Creates a generic FHIR transaction Bundle.
  */
-export const createFhirMedicationRequest = ({
-  patientId,
-  medicationId,
-  status,
-  intent,
-}) => {
-  return {
-    resourceType: "MedicationRequest",
-    status,
-    intent,
-    medicationReference: createMedicationRef(medicationId),
-    subject: createPatientRef(patientId),
-  };
-};
-
-/**
- * Creates a minimal FHIR Provenance.
- *
- * Required:
- * - targetReference
- * - agentReference
- *
- * https://hl7.org/fhir/R4/provenance.html
- */
-export const createFhirProvenance = ({ targetReference, agentReference }) => {
-  return {
-    resourceType: "Provenance",
-    target: [
-      {
-        reference: targetReference,
-      },
-    ],
-    recorded: new Date().toISOString(),
-    agent: [
-      {
-        who: {
-          reference: agentReference,
-        },
-      },
-    ],
-  };
-};
-
-/**
- * Creates a FHIR transaction Bundle.
- *
- * Every resource is submitted using POST.
- * The transaction is atomic: either all entries succeed or none do.
- *
- * https://hl7.org/fhir/R4/bundle.html
- */
-export const createFhirTransactionBundle = (resources) => {
+export const createFhirTransactionBundle = (
+  resources,
+) => {
   return {
     resourceType: "Bundle",
     type: "transaction",
-    entry: resources.map((resource) => ({
-      resource,
-      request: {
-        method: "POST",
-        url: resource.resourceType,
-      },
-    })),
+    entry: resources.map(createPostEntry),
   };
+};
+
+/**
+ * Creates a transaction Bundle that replaces
+ * the currently active anamnesis Consent.
+ *
+ * The transaction:
+ * 1. Sets the existing active Consent to inactive, if present.
+ * 2. Creates a new active Consent with permit or deny.
+ * 3. Optionally creates additional FHIR resources.
+ *
+ * Use with an empty resources array for a denied Consent
+ * that must be stored without sharing anamnesis data.
+ */
+export const createConsentReplacementBundle = ({
+  currentConsent,
+  newConsent,
+  resources = [],
+}) => {
+  const entries = [];
+
+  if (currentConsent) {
+    const inactiveConsent =
+      deactivateConsent(currentConsent);
+
+    entries.push(createPutEntry(inactiveConsent));
+  }
+
+  entries.push(createPostEntry(newConsent));
+
+  for (const resource of resources) {
+    entries.push(createPostEntry(resource));
+  }
+
+  return {
+    resourceType: "Bundle",
+    type: "transaction",
+    entry: entries,
+  };
+};
+
+/**
+ * Creates the transaction used when the patient
+ * denies sharing anamnesis data.
+ *
+ * Only Consent resources are written to FHIR.
+ */
+export const createDeniedAnamnesisConsentBundle = ({
+  patientId,
+  currentConsent,
+}) => {
+  const deniedConsent =
+    createFhirAnamnesisConsent({
+      patientId,
+      decision: "deny",
+    });
+
+  return createConsentReplacementBundle({
+    currentConsent,
+    newConsent: deniedConsent,
+  });
+};
+
+/**
+ * Creates the FHIR transaction for a permitted anamnesis.
+ *
+ * The previous active Consent is deactivated.
+ * A new active permit Consent is created together with
+ * the Conditions and MedicationStatements.
+ */
+export const createPermittedAnamnesisBundle = ({
+  patientId,
+  currentConsent,
+  conditions = [],
+  medicationStatements = [],
+}) => {
+  const permitConsent =
+    createFhirAnamnesisConsent({
+      patientId,
+      decision: "permit",
+    });
+
+  return createConsentReplacementBundle({
+    currentConsent,
+    newConsent: permitConsent,
+    resources: [
+      ...conditions,
+      ...medicationStatements,
+    ],
+  });
+};
+
+/**
+ * Creates a FHIR transaction for anamnesis resources
+ * when an existing active permit Consent remains valid.
+ *
+ * The existing Consent is not posted again.
+ */
+export const createAnamnesisDataBundle = ({
+  conditions = [],
+  medicationStatements = [],
+}) => {
+  return createFhirTransactionBundle([
+    ...conditions,
+    ...medicationStatements,
+  ]);
 };
