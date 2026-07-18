@@ -172,6 +172,15 @@ export const fhirPostConsent = async (newConsent) => {
   return result.data;
 };
 
+export const fhirPutConsent = async (consent) => {
+  requireValue(consent, "consent");
+  requireValue(consent.id, "consent.id");
+
+  const result = await fhir.put(`/Consent/${consent.id}`, consent);
+
+  return result.data;
+};
+
 // ---------- Medication ----------
 
 export const fhirGetMedicationById = async (medicationId) => {

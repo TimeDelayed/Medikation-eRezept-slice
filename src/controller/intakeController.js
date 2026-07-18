@@ -3,7 +3,8 @@ import {
   fhirGetPatientByIdentifier,
   fhirGetPatientsByDemographics,
   fhirGetActivePatientConsents,
-  fhirPostConsent
+  fhirPostConsent,
+  fhirPutConsent,
 } from "../fhirClient/fhir-client.js";
 import { FHIR_NAMESPACE } from "../constants/fhirConstants.js";
 import { createFhirPatient, createFhirConsent } from "../util/mapper.js";
@@ -111,15 +112,57 @@ export const checkConsentHandler = async (req, res) => {
 
 export const recordConsentHandler = async (req, res) => {
   const { patientId, category, status } = req.body;
+
   if (!patientId || !category || !status) {
     return res.status(400).json({
       error:
-        "Missing required body parameters: patient, consent category, status",
+        "Missing required body parameters: patientId, category, status",
     });
   }
-  const newConsent = createFhirConsent({ patientId, category, status });
+
+  if (status !== "active") {
+    return res.status(400).json({
+      error:
+        "New consents must be created with status active. Use the update endpoint to revoke or change a consent.",
+    });
+  }
+
+  const patientIdNoPrefix = patientId.replace(/^Patient\//, "");
+
   try {
-    
+    const activeConsents = await fhirGetActivePatientConsents(
+      patientIdNoPrefix,
+      category,
+    );
+
+    if (activeConsents.length > 0) {
+      return res.status(409).json({
+        error:
+          "An active consent already exists for this patient and category. Use the update endpoint to revoke or modify it.",
+        consents: activeConsents,
+      });
+    }
+
+    const newConsent = createFhirConsent({
+      patientId: patientIdNoPrefix,
+      category,
+      status,
+    });
+
+    const result = await fhirPostConsent(newConsent);
+
+    return res.status(201).json(result);
+  } catch (e) {
+    console.error(e);
+
+    return res.status(e.response?.status ?? 502).json({
+      status: "error",
+      message: "FHIR consent creation failed",
+      error:
+        e.response?.data?.issue?.map(
+          (issue) => issue.diagnostics ?? issue.code,
+        ) ?? [e.message],
+    });
   }
 };
 
