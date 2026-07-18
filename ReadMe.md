@@ -43,3 +43,8 @@ yarn mongodb
 ```bash
 yarn start:dev
 ```
+
+## Mongo Express Dashboard
+via http://localhost:8081
+user: admin
+password: pass
