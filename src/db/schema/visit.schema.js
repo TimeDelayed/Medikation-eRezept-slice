@@ -9,7 +9,7 @@ const visitSchema = new Schema({
     type: String,
     index: true,
     required: true,
-    default: nanoid(),
+    default: () => nanoid(),
   },
   kv: {
     type: String,

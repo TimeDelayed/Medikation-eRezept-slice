@@ -7,7 +7,7 @@ const anamnesisSchema = new Schema({
     type: String,
     index: true,
     required: true,
-    default: nanoid(),
+    default: () => nanoid(),
   },
   // needs a patient
   patientFhirId: {

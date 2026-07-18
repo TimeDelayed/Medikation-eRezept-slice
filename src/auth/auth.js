@@ -32,8 +32,12 @@ export const handleDummyLogin = (req, res) => {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  const user = { username };
-  const token = jwt.sign(user, privateKey, { expiresIn: "60d",  algorithm: "RS256" });
+  const roles = ["admin", "physician"];
+  const randomNumber = Math.floor(Math.random() * 100);
+  const token = jwt.sign({
+    name: `Example physician ${randomNumber}`,
+    roles: roles,
+  }, privateKey, { expiresIn: "60d",  algorithm: "RS256" });
   console.log("Generated JWT token:", token);
 
   return res.status(200).json({ token: token });
