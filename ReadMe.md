@@ -47,3 +47,8 @@ yarn start:dev
 ## Access Endpoints via Swagger UI
 
 Use ```http://localhost:3000/swagger/```
+
+## Mongo Express Dashboard
+via http://localhost:8081
+user: admin
+password: pass
