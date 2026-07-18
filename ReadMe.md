@@ -43,3 +43,7 @@ yarn mongodb
 ```bash
 yarn start:dev
 ```
+
+## Access Endpoints via Swagger UI
+
+Use ```http://localhost:3000/swagger/```
