@@ -79,7 +79,7 @@ export const searchPatientHandler = async (req, res) => {
 //TODO: create other intake endpoints
 
 export const createVisitHandler = async (req, res) => {
-  res.status(500);
+  return res.status(500).json("Error");
 };
 
 export const checkConsentHandler = async (req, res) => {

@@ -1,19 +1,23 @@
 import { Router } from "express";
 import { handleDummyLogin, securityMiddleware } from "../auth/auth.js";
+import { addAuditOptions } from "../audit/addAuditOptionsMiddelware.js";
+import { auditMiddleware } from "../audit/auditMiddleWare.js";
 import {
-  createPatientHandler,
-  searchPatientHandler,
-  createVisitHandler,
   checkConsentHandler,
+  createPatientHandler,
+  createVisitHandler,
   recordConsentHandler,
+  searchPatientHandler,
   submitAnamnesisHandler,
 } from "../controller/intakeController.js";
 import {
-  getMedicationHistoryHandler,
   createPrescriptionHandler,
   finalizeVisitHandler,
+  getMedicationHistoryHandler,
 } from "../controller/medicationController.js";
+import { ResourceType } from "../db/schema/ressourceType.js";
 
+// https://expressjs.com/en/guide/writing-middleware/
 // https://expressjs.com/en/5x/guide/routing/
 const router = Router();
 
@@ -29,6 +33,27 @@ const router = Router();
  *         description: API version returned successfully.
  */
 router.get("/ping", (_, res) => res.json({ version: "2.13.0" }));
+
+// ---------- Authentication ----------
+
+/**
+ * @openapi
+ * /login:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Performs a dummy login.
+ *     responses:
+ *       200:
+ *         description: Login successful.
+ */
+
+router.use(auditMiddleware);
+
+router.post("/login", addAuditOptions("Login", ResourceType.USER), handleDummyLogin);
+
+// middleware
+// router.use(securityMiddleware);
 
 // ---------- Patient ----------
 
@@ -85,7 +110,7 @@ router.get("/ping", (_, res) => res.json({ version: "2.13.0" }));
  *       409:
  *         description: Multiple patients matched the demographic search.
  */
-router.get("/Patient", searchPatientHandler);
+router.get("/Patient", addAuditOptions("search", ResourceType.PATIENT), searchPatientHandler);
 
 // ---------- Consent ----------
 /**
@@ -119,7 +144,7 @@ router.get("/Patient", searchPatientHandler);
  *       400:
  *         description: Missing required query parameters.
  */
-router.get("/Patient/consents", checkConsentHandler);
+router.get("/Patient/consents", addAuditOptions("create", ResourceType.CONSENT), checkConsentHandler);
 
 /**
  * @openapi
@@ -143,7 +168,7 @@ router.get("/Patient/consents", checkConsentHandler);
  *       400:
  *         description: Missing required patient data.
  */
-router.post("/Patient", createPatientHandler);
+router.post("/Patient",addAuditOptions("create", ResourceType.PATIENT), createPatientHandler);
 
 // ---------- Visit ----------
 
@@ -161,7 +186,7 @@ router.post("/Patient", createPatientHandler);
  *       201:
  *         description: Visit created successfully.
  */
-router.post("/visits", createVisitHandler);
+router.post("/visits",addAuditOptions("create", ResourceType.VISIT), createVisitHandler);
 
 // ---------- Consent ----------
 
@@ -196,7 +221,7 @@ router.post("/visits", createVisitHandler);
  *       400:
  *         description: Missing query parameters.
  */
-router.get("/visits/:visitId/consent", checkConsentHandler);
+router.get("/visits/:visitId/consent", addAuditOptions("Read", ResourceType.CONSENT), checkConsentHandler);
 
 /**
  * @openapi
@@ -217,7 +242,7 @@ router.get("/visits/:visitId/consent", checkConsentHandler);
  *       201:
  *         description: Consent recorded successfully.
  */
-router.post("/visits/:visitId/consent", recordConsentHandler);
+router.post("/visits/:visitId/consent", addAuditOptions("create", ResourceType.CONSENT), recordConsentHandler);
 
 // ---------- Anamnesis ----------
 
@@ -241,7 +266,7 @@ router.post("/visits/:visitId/consent", recordConsentHandler);
  *       200:
  *         description: Anamnesis submitted successfully.
  */
-router.post("/visits/:visitId/anamnesis", submitAnamnesisHandler);
+router.post("/visits/:visitId/anamnesis", addAuditOptions("Update Visit", ResourceType.VISIT), submitAnamnesisHandler);
 
 // ---------- Medication ----------
 
@@ -262,7 +287,7 @@ router.post("/visits/:visitId/anamnesis", submitAnamnesisHandler);
  *       200:
  *         description: Medication history returned.
  */
-router.get("/visits/:visitId/medicationHistory", getMedicationHistoryHandler);
+router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", ResourceType.MEDICATION_STATEMENT), getMedicationHistoryHandler);
 
 /**
  * @openapi
@@ -283,7 +308,7 @@ router.get("/visits/:visitId/medicationHistory", getMedicationHistoryHandler);
  *       201:
  *         description: Prescription created successfully.
  */
-router.post("/visits/:visitId/prescription", createPrescriptionHandler);
+router.post("/visits/:visitId/prescription", addAuditOptions("create", ResourceType.MEDICATION_REQUEST), createPrescriptionHandler);
 
 /**
  * @openapi
@@ -302,24 +327,8 @@ router.post("/visits/:visitId/prescription", createPrescriptionHandler);
  *       200:
  *         description: Visit finalized successfully.
  */
-router.post("/visits/:visitId/finalize", finalizeVisitHandler);
+router.post("/visits/:visitId/finalize", addAuditOptions("finish Visit", ResourceType.VISIT), finalizeVisitHandler);
 
-// ---------- Authentication ----------
 
-/**
- * @openapi
- * /login:
- *   post:
- *     tags:
- *       - Authentication
- *     summary: Performs a dummy login.
- *     responses:
- *       200:
- *         description: Login successful.
- */
-router.post("/login", handleDummyLogin);
-
-// middleware
-router.use(securityMiddleware);
 
 export default router;
