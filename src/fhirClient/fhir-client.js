@@ -138,29 +138,44 @@ export const fhirGetConsentById = async (consentId) => {
   return result.data;
 };
 
-export const fhirGetAllConsentsByPatientId = async (patientId) => {
+export const fhirGetAllConsentsByPatientId = async (
+  patientId,
+  category,
+) => {
   requireValue(patientId, "patientId");
 
-  const result = await fhir.get("/Consent", {
-    params: {
-      patient: patientId,
-    },
-  });
+  const params = {
+    patient: patientId,
+  };
+
+  if (category) {
+    params.category = category;
+  }
+
+  const result = await fhir.get("/Consent", { params });
 
   return getEntries(result.data);
 };
 
-export const fhirGetActivePatientConsents = async (patientId, category) => {
+export const fhirGetCurrentPatientConsents = async (
+  patientId,
+  category,
+) => {
   requireValue(patientId, "patientId");
-  requireValue(category, "category");
+
+  const params = {
+    patient: patientId,
+    status: "active",
+  };
+
+  if (category) {
+    params.category = category;
+  }
 
   const result = await fhir.get("/Consent", {
-    params: {
-      patient: patientId,
-      category: category,
-      status: "active",
-    },
+    params,
   });
+
   return getEntries(result.data);
 };
 
@@ -168,15 +183,6 @@ export const fhirPostConsent = async (newConsent) => {
   requireValue(newConsent, "newConsent");
 
   const result = await fhir.post("/Consent", newConsent);
-
-  return result.data;
-};
-
-export const fhirPutConsent = async (consent) => {
-  requireValue(consent, "consent");
-  requireValue(consent.id, "consent.id");
-
-  const result = await fhir.put(`/Consent/${consent.id}`, consent);
 
   return result.data;
 };

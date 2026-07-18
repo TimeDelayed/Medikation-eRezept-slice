@@ -34,92 +34,85 @@ router.get("/ping", (_, res) => res.json({ version: "2.13.0" }));
 
 /**
  * @openapi
- * /Patient:
- *   get:
- *     tags:
- *       - Patient
- *     summary: Searches for a patient.
- *     description: >
- *       Searches either by insurance identifier (kv) or by demographic information.
- *       If 'kv' is provided, identifier search is performed.
- *       Otherwise demographic search is used.
- *     parameters:
- *       - in: query
- *         name: insuranceType
- *         schema:
- *           type: string
- *           enum: [GKV, PKV]
- *         description: Insurance identifier (GKV / PKV).
- *       - in: query
- *         name: kv
- *         schema:
- *           type: string
- *         description: Insurance number (A123456789)
- *       - in: query
- *         name: familyName
- *         schema:
- *           type: string
- *       - in: query
- *         name: givenName
- *         schema:
- *           type: string
- *       - in: query
- *         name: birthday
- *         schema:
- *           type: string
- *           format: date
- *       - in: query
- *         name: gender
- *         schema:
- *           type: string
- *           enum: [male, female, other, unknown]
- *       - in: query
- *         name: address
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Matching patient returned.
- *       404:
- *         description: Patient not found.
- *       409:
- *         description: Multiple patients matched the demographic search.
- */
-router.get("/Patient", searchPatientHandler);
-
-// ---------- Consent ----------
-/**
- * @openapi
  * /Patient/consents:
  *   get:
  *     tags:
  *       - Patient consent
- *     summary: Searches consents of a category for a patient.
+ *     summary: Returns patient consents.
  *     description: >
- *       Searches for consents of a specific category for a patient. The patient is identified by the provided fhir patientId.
+ *       Returns all Consents of a patient.
+ *       If a category is provided, only Consents of that category are returned.
  *     parameters:
  *       - in: query
  *         name: patientId
  *         required: true
  *         schema:
  *           type: string
- *           description: FHIR Patient reference.
+ *         description: FHIR Patient id.
  *       - in: query
  *         name: category
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
- *           description: >
- *             Consent category. Example: "dsgvo" or "research".
+ *         description: Consent category.
  *     responses:
  *       200:
- *         description: Matching consents returned.
- *       404:
- *         description: No consents found for the patient and category.
+ *         description: Matching Consents returned.
  *       400:
  *         description: Missing required query parameters.
  */
 router.get("/Patient/consents", checkConsentHandler);
+
+/**
+ * @openapi
+ * /Patient/consents:
+ *   post:
+ *     tags:
+ *       - Patient consent
+ *     summary: Records a patient consent decision.
+ *     description: >
+ *       Records a new Consent decision.
+ *
+ *       If no active Consent of the requested category exists, a new active
+ *       Consent is created.
+ *
+ *       If an active Consent with a different decision exists, it is first
+ *       marked as inactive and a new active Consent is created.
+ *
+ *       If an active Consent with the same decision already exists,
+ *       the request fails with HTTP 409 Conflict.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - patientId
+ *               - category
+ *               - decision
+ *             properties:
+ *               patientId:
+ *                 type: string
+ *                 description: FHIR Patient id.
+ *               category:
+ *                 type: string
+ *                 description: Consent category.
+ *               decision:
+ *                 type: string
+ *                 enum:
+ *                   - permit
+ *                   - deny
+ *                 description: Consent decision.
+ *     responses:
+ *       201:
+ *         description: Consent created successfully.
+ *       400:
+ *         description: Invalid request body.
+ *       409:
+ *         description: An active Consent with the same decision already exists.
+ */
+router.post("/Patient/consents", recordConsentHandler);
 
 /**
  * @openapi

@@ -2,9 +2,8 @@ import {
   fhirPostPatient,
   fhirGetPatientByIdentifier,
   fhirGetPatientsByDemographics,
-  fhirGetActivePatientConsents,
   fhirPostConsent,
-  fhirPutConsent,
+  fhirGetAllConsentsByPatientId,
 } from "../fhirClient/fhir-client.js";
 import { FHIR_NAMESPACE } from "../constants/fhirConstants.js";
 import { createFhirPatient, createFhirConsent } from "../util/mapper.js";
@@ -84,19 +83,24 @@ export const createVisitHandler = async (req, res) => {
 
 export const checkConsentHandler = async (req, res) => {
   const { patientId, category } = req.query;
-  if (!patientId || !category) {
+  if (!patientId) {
     return res.status(400).json({
       error: "Missing required query parameters: patient, consent category",
     });
   }
 
   const patientIdNoPrefix = patientId.replace(/^Patient\//, "");
-
+  let consents;
   try {
-    const consents = await fhirGetActivePatientConsents(
-      patientIdNoPrefix,
-      category,
-    );
+    if (category) {
+      consents = await fhirGetAllConsentsByPatientId(
+        patientIdNoPrefix,
+        category,
+      );
+    } else {
+      consents = await fhirGetAllConsentsByPatientId(patientIdNoPrefix);
+    }
+
     res.status(200).json(consents);
   } catch (e) {
     console.error(e);
@@ -111,50 +115,62 @@ export const checkConsentHandler = async (req, res) => {
 };
 
 export const recordConsentHandler = async (req, res) => {
-  const { patientId, category, status } = req.body;
+  const { patientId, category, decision } = req.body;
 
-  if (!patientId || !category || !status) {
+  if (!patientId || !category || !decision) {
     return res.status(400).json({
       error:
-        "Missing required body parameters: patientId, category, status",
+        "Missing required body parameters: patientId, category, decision",
     });
   }
 
-  if (status !== "active") {
+  const allowedDecisions = ["permit", "deny"];
+
+  if (!allowedDecisions.includes(decision)) {
     return res.status(400).json({
-      error:
-        "New consents must be created with status active. Use the update endpoint to revoke or change a consent.",
+      error: "Decision must be permit or deny.",
     });
   }
 
   const patientIdNoPrefix = patientId.replace(/^Patient\//, "");
 
   try {
-    const activeConsents = await fhirGetActivePatientConsents(
+    const consents = await fhirGetAllConsentsByPatientId(
       patientIdNoPrefix,
       category,
     );
 
-    if (activeConsents.length > 0) {
-      return res.status(409).json({
-        error:
-          "An active consent already exists for this patient and category. Use the update endpoint to revoke or modify it.",
-        consents: activeConsents,
-      });
+    const activeConsent = consents.find(
+      (consent) => consent.status === "active",
+    );
+
+    if (activeConsent) {
+      if (activeConsent.provision?.type === decision) {
+        return res.status(409).json({
+          error:
+            "An active consent with the same decision already exists.",
+          consent: activeConsent,
+        });
+      }
+
+      const inactiveConsent = {
+        ...activeConsent,
+        status: "inactive",
+      };
+
+      await fhirPutConsent(inactiveConsent);
     }
 
     const newConsent = createFhirConsent({
       patientId: patientIdNoPrefix,
       category,
-      status,
+      decision,
     });
 
     const result = await fhirPostConsent(newConsent);
 
     return res.status(201).json(result);
   } catch (e) {
-    console.error(e);
-
     return res.status(e.response?.status ?? 502).json({
       status: "error",
       message: "FHIR consent creation failed",
@@ -165,7 +181,6 @@ export const recordConsentHandler = async (req, res) => {
     });
   }
 };
-
 export const submitAnamnesisHandler = async (req, res) => {
   res.status(500);
 };

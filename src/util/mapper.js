@@ -145,27 +145,36 @@ export const updateFhirPatient = (patient, updates) => {
  * Required:
  * - patientId
  * - category
- * - status
+ * - decision ("permit" | "deny")
+ *
+ * Every newly created Consent is active.
  *
  * https://hl7.org/fhir/R4/consent.html
  */
-export const createFhirConsent = ({ patientId, category, status }) => {
-  return {
-    resourceType: "Consent",
-    status,
-    scope: {
-      coding: [
-        {
-          system: CONSENT_SCOPE_SYSTEM,
-          code: "patient-privacy",
-        },
-      ],
-    },
-    category: [createFhirCodeableConcept(category, "consent-type")],
-    patient: createPatientRef(patientId),
-    dateTime: new Date().toISOString(),
-  };
-};
+export const createFhirConsent = ({
+  patientId,
+  category,
+  decision,
+}) => ({
+  resourceType: "Consent",
+  status: "active",
+  scope: {
+    coding: [
+      {
+        system: CONSENT_SCOPE_SYSTEM,
+        code: "patient-privacy",
+      },
+    ],
+  },
+  category: [
+    createFhirCodeableConcept(category, "consent-type"),
+  ],
+  patient: createPatientRef(patientId),
+  dateTime: new Date().toISOString(),
+  provision: {
+    type: decision,
+  },
+});
 
 /**
  * Creates a minimal FHIR Condition.
