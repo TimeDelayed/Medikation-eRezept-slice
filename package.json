@@ -8,7 +8,9 @@
   "scripts": {
     "start:dev": "nodemon --watch src --env-file=.env src/service.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "mongodb": "docker compose up -d"
+    "mongodb": "docker compose up -d",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "repository": {
     "type": "git",
@@ -31,6 +33,12 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
     "nodemon": "^3.1.14"
   }
 }

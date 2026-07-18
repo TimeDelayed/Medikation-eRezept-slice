@@ -3,9 +3,10 @@ import {
   fhirGetPatientByIdentifier,
   fhirGetPatientsByDemographics,
   fhirGetActivePatientConsents,
+  fhirPostConsent
 } from "../fhirClient/fhir-client.js";
 import { FHIR_NAMESPACE } from "../constants/fhirConstants.js";
-import { createFhirPatient } from "../util/mapper.js";
+import { createFhirPatient, createFhirConsent } from "../util/mapper.js";
 import {
   createIdentifierSearchToken,
   patientsTieBreaker,
@@ -109,7 +110,17 @@ export const checkConsentHandler = async (req, res) => {
 };
 
 export const recordConsentHandler = async (req, res) => {
-  res.status(500);
+  const { patientId, category, status } = req.body;
+  if (!patientId || !category || !status) {
+    return res.status(400).json({
+      error:
+        "Missing required body parameters: patient, consent category, status",
+    });
+  }
+  const newConsent = createFhirConsent({ patientId, category, status });
+  try {
+    
+  }
 };
 
 export const submitAnamnesisHandler = async (req, res) => {

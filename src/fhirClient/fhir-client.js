@@ -61,11 +61,21 @@ export const fhirGetPatientsByDemographics = async ({
 }) => {
   const params = {};
 
-  if (familyName) params.family = familyName;
-  if (givenName) params.given = givenName;
-  if (birthday) params.birthdate = birthday;
-  if (address) params.address = address;
-  if (gender) params.gender = gender;
+  if (familyName) {
+    params.family = familyName;
+  }
+  if (givenName) {
+    params.given = givenName;
+  }
+  if (birthday) {
+    params.birthdate = birthday;
+  }
+  if (address) {
+    params.address = address;
+  }
+  if (gender) {
+    params.gender = gender;
+  }
 
   const result = await fhir.get("/Patient", { params });
 
@@ -148,7 +158,7 @@ export const fhirGetActivePatientConsents = async (patientId, category) => {
     params: {
       patient: patientId,
       category: category,
-      status: "active"
+      status: "active",
     },
   });
   return getEntries(result.data);

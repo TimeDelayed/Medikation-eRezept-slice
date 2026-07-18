@@ -21,9 +21,9 @@ export const medications = [
 // for simulation of doctor picking the correct medication
 // https://stackoverflow.com/questions/5915096/get-a-random-item-from-a-javascript-array
 export const pickRandomCondition = () => {
-  return conditions[Math.floor(Math.random() * conditions.length)]
-}
+  return conditions[Math.floor(Math.random() * conditions.length)];
+};
 
 export const pickRandomMedication = () => {
-  return medications[Math.floor(Math.random() * medications.length)]
-}
+  return medications[Math.floor(Math.random() * medications.length)];
+};

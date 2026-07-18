@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { nanoid } from 'nanoid'
+import { nanoid } from "nanoid";
 import { Schema } from "mongoose";
-import anamnesisSchema from "./anamnesis.schema.js"
+import anamnesisSchema from "./anamnesis.schema.js";
 
 //https://mongoosejs.com/docs/guide.html#timeseries
 const visitSchema = new Schema({
@@ -9,7 +9,7 @@ const visitSchema = new Schema({
     type: String,
     index: true,
     required: true,
-    default: nanoid()
+    default: nanoid(),
   },
   kv: {
     type: String,
@@ -22,16 +22,16 @@ const visitSchema = new Schema({
   //https://stackoverflow.com/questions/29299477/how-to-create-and-use-enum-in-mongoose
   visitStatus: {
     type: String,
-    enum : ['started','inProgress', 'done'],
+    enum : ["started","inProgress", "done"],
     required: true,
-    default: 'started',
+    default: "started",
   },
   //consent
   consent: {
     haveConsent: {
       type: Boolean,
       required: true,
-      default: false
+      default: false,
     },
     fhirConsentId: {
       type: String,
@@ -40,12 +40,12 @@ const visitSchema = new Schema({
     gotConsentAt: {
       type: Date,
       required: false,
-    }
+    },
   },
   // anamnesis (übergangsweise zum speichern (löschung,wenn consent nicht vorhanden))
   anamnesis : {
     type: anamnesisSchema,
-    required: false
+    required: false,
   },
   // from doctor
   localPrescriptions: [
@@ -57,20 +57,20 @@ const visitSchema = new Schema({
       medication : {
         type: String,
         required: false,
-      }
-    }
+      },
+    },
   ],
   // send bundle
   fhirBundleRef: {
     type: String,
     required: false,
   },
-}, { timestamps: true })
+}, { timestamps: true });
 
 //https://github.com/Automattic/mongoose/issues/14097
 //https://stackoverflow.com/questions/51349764/createindex-in-mongoose
 // aufbewahrung von 10 Jahren
 visitSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 365 * 10 });
 
-const Visit = mongoose.model('Visit', visitSchema)
-export default Visit
+const Visit = mongoose.model("Visit", visitSchema);
+export default Visit;

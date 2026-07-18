@@ -11,7 +11,7 @@ const options = {
     components: {
       schemas: {
         ...schemas,
-      }
+      },
     },
   },
   apis: ["./src/routes/*.js", "./src/controller/*.js"],

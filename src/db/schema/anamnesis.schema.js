@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { nanoid } from 'nanoid'
+import { nanoid } from "nanoid";
 import { Schema } from "mongoose";
 
 const anamnesisSchema = new Schema({
@@ -7,7 +7,7 @@ const anamnesisSchema = new Schema({
     type: String,
     index: true,
     required: true,
-    default: nanoid()
+    default: nanoid(),
   },
   // needs a patient
   patientFhirId: {
@@ -21,16 +21,16 @@ const anamnesisSchema = new Schema({
   },
   preexistingConditions: [{
     code: String,
-    display : String
+    display : String,
   }],
   longTermMedications: [{
     code: String,
-    display : String
+    display : String,
   }],
   sendToFhir: {
     type: Date,
-    required: false
+    required: false,
   },
-}, { timestamps: true })
+}, { timestamps: true });
 
 export default anamnesisSchema;
