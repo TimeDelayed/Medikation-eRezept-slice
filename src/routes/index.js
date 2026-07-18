@@ -4,6 +4,7 @@ import { addAuditOptions } from "../audit/addAuditOptionsMiddelware.js";
 import { auditMiddleware } from "../audit/auditMiddleWare.js";
 import {
   createVisitHandler,
+  getAllVisits,
   /*submitAnamnesisHandler*/
 } from "../controller/anamnesisController.js";
 import {
@@ -111,6 +112,25 @@ router.post("/login", addAuditOptions("Login", ResourceType.USER), handleDummyLo
  *         description: FHIR Patient lookup or creation failed.
  */
 router.post("/Patient", addAuditOptions("create", ResourceType.VISIT), createVisitHandler);
+
+/**
+ * @openapi
+ * /Patient/visits:
+ *   get:
+ *     tags:
+ *       - Visit
+ *     summary: Shows all current visits.
+ *     responses:
+ *       200:
+ *         description: Successfully found visits.
+ *       500:
+ *         description: Database failed.
+ */
+router.get(
+  "/Patient/visits",
+  addAuditOptions("get", ResourceType.BUNDLE),
+  getAllVisits,
+);
 
 
 // ---------- Anamnesis ----------

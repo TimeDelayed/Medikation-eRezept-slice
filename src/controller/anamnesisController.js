@@ -184,9 +184,16 @@ export const createVisitHandler = async (req, res) => {
  *
  * Shows all finalized and pending visits inside the Db
  */
-const getAllVisits = (req, res) => {
-  const allVisits = Visit.find().all();
-  return res.status(200).json({ allVisits });
+export const getAllVisits = async (req, res) => {
+  try {
+    const allVisits = await Visit.find({});
+    console.log(allVisits)
+    return res.status(200).json(allVisits);
+  } catch (e) {
+    return res.status(500).json({
+      error: "Database failed.",
+    });
+  }
 };
 
 /**
@@ -199,5 +206,5 @@ const getAllVisits = (req, res) => {
 const submitAnamnesisHandler = (req, res) => {
   const { condition, medicationStatement, consent } = req.body;
   const { visitId } = req.param;
-  
-}
+
+};
