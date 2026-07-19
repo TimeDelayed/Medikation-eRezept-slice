@@ -71,7 +71,7 @@ router.use(auditMiddleware);
 router.post("/login", addAuditOptions("Login", ResourceType.USER), handleDummyLogin);
 
 // middleware
-// router.use(securityMiddleware);
+router.use(securityMiddleware);
 
 /**
  * @openapi
