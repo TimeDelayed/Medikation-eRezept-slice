@@ -7,6 +7,7 @@ import {
   FHIR_BASE_URL,
 } from "../constants/fhirConstants.js";
 import crypto from "crypto";
+import Visit from "../db/schema/visit.schema.js";
 
 /**
  * Returns the identifier system URI.

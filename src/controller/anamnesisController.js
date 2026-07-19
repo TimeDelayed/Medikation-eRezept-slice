@@ -15,6 +15,7 @@ import {
 } from "../util/fhirHelpers.js";
 
 import { submitAnamnesis } from "../services/anamnesisService.js";
+import { checkIfPatientHasPendingVisit } from "../util/dbHelpers.js";
 
 /**
  * Finds an existing FHIR Patient or creates a new one.
@@ -136,6 +137,22 @@ export const createVisitHandler = async (req, res) => {
       return res.status(502).json({
         error:
           "FHIR Patient response did not contain a resource id",
+      });
+    }
+
+    try {
+      const patientExistingPendingVisit = await checkIfPatientHasPendingVisit(patient.id);
+      if (patientExistingPendingVisit) {
+        return res.status(409).json({
+          error:
+            "Patient already has a pending visit.",
+          visit: patientExistingPendingVisit,
+        });
+      }
+    } catch (e) {
+      return res.status(502).json({
+        error:
+          "Database failed while checking for existing pending visit.",
       });
     }
 
