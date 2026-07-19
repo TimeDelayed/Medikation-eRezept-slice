@@ -10,13 +10,13 @@ import { nanoid } from "nanoid";
 const service = express();
 const port = 3000;
 
-service.use(express.json(), router);
-
 service.use(
   "/swagger",
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec),
 );
+
+service.use(express.json(), router);
 
 const main = async () => {
   // https://mongoosejs.com/docs/connections.html
