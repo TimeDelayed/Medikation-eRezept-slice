@@ -66,17 +66,18 @@ Aus diesen Grundsteinen und dem Ablauf entstand die folgende Schichtenarchitektu
 
 ![Medication Service Architektur](docs/Architecture.svg)
 
-## Prerequisites
+## Setup
+Es müssen ein private.key und ein public.key im repo liegen. 
+Diese können über die unteren Befehle erzeugt werden. 
 
+## Prerequisites
 * Node.js
 * Docker Desktop
 * Git
 
 Yarn is already included via Corepack.
 
-## Generate the PUBLIC_KEY and PRIVATE_KEY 
-
-Use Commands and 
+## Generate the PUBLIC_KEY and PRIVATE_KEY
 
 ### PRIVATE_KEY
 ````bash 
@@ -87,7 +88,6 @@ openssl genrsa -out ./private.key 4096
 ````bash 
 openssl rsa -in ./private.key -pubout -outform PEM -out ./public.key
 ````
-
 
 ## Project setup
 
