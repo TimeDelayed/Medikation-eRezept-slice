@@ -10,14 +10,13 @@ import { nanoid } from "nanoid";
 const service = express();
 const port = 3000;
 
-// swaggger ui for docu, should TODO: call this AFTER service.use(express.json(), router) and configure swagger auth!
+service.use(express.json(), router);
+
 service.use(
   "/swagger",
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec),
 );
-
-service.use(express.json(), router);
 
 const main = async () => {
   // https://mongoosejs.com/docs/connections.html

@@ -1,4 +1,4 @@
-@startuml patientenJourny-realitaet
+@startuml patientenJourny
 
 start
 :Patient betritt Arzt Praxis;
@@ -101,12 +101,8 @@ MedicationRequest + Provenance atomar;
 
 :Behandlungsdokumentation bleibt gespeichert (Aufbewahrungspflicht von 10 Jahre);
 note right
-unabhängig von der Einwilligung
+Durch mongoDB geregelt (expireAfterSeconds)
 end note
-if (Consent?) then (nein)
-  :Zusatzdaten löschen;
-else (ja)
-endif
 
 :Medikation erfolgreich verordnet;
 stop

@@ -1,0 +1,49 @@
+@startuml Architecture
+actor "Schalter / Arzt" as Client
+cloud "HAPI FHIR" as FHIR
+database "MongoDB" as Mongo
+
+package "Application (Port 3000)" as App {
+
+  [Router] as Router
+
+
+  package "Middleware" as MW {
+    [Auth] as Auth
+    [Audit] as Audit
+  }
+
+  package "Controller" as Controller {
+    [visitController.js] as Visit
+  }
+
+  package "Service" as Service {
+    [visitService] as VisitService
+  }
+
+  component "FHIR Client" as FhirClient
+
+  package "DB" as db {
+    [Visit] as VisitModel
+    [AuditTrail] as AuditModel
+  }
+}
+
+Client --> Router : HTTP
+
+Router --> Auth : JWT verify
+Router --> Audit : Aktion + ResourceType
+Router --> Visit : Handler
+
+Visit --> VisitService : Use-Case ausführen
+
+VisitService --> FhirClient : GET/POST FHIR
+VisitService --> VisitModel : lesen / speichern
+
+FhirClient --> FHIR : REST
+
+
+VisitModel --> Mongo
+AuditModel --> Mongo
+
+@enduml
