@@ -309,7 +309,7 @@ export const submitAnamnesis = async ({
   const visit = await findPendingVisitById(visitId);
 
   if (!visit) {
-    throw new AppError(404, "Visit not found.");
+    throw new AppError(404, "Visit not found. Searched for visits with status 'started'.");
   }
 
   const conditionInputs = toArray(condition);

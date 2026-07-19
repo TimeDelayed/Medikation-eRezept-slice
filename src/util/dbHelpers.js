@@ -1,3 +1,4 @@
+import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED, VISIT_STARTED_STATUS } from "../constants/fhirConstants.js";
 import Visit from "../db/schema/visit.schema.js";
 import { AppError } from "../errors/AppError.js";
 
@@ -52,7 +53,7 @@ export const findPendingVisitById = async (visitId) => {
   return executeDatabaseOperation(
     () => Visit.findOne({
       visitId,
-      visitStatus: { $ne: "done" },
+      visitStatus: { $in: [VISIT_STARTED_STATUS] },
     }),
     "Database failed while loading the Visit.",
   );
