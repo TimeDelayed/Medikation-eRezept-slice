@@ -1,91 +1,61 @@
 export const schemas = {
   PatientCreate: {
     type: "object",
-    required: ["kv", "insuranceType", "familyName", "givenNames"],
+    required: [
+      "kv",
+      "insuranceType",
+      "familyName",
+      "givenNames",
+      "birthday",
+      "gender",
+      "address",
+    ],
     properties: {
       kv: {
         type: "string",
-        description: "Health insurance identifier (KVNR or PKV identifier).",
         example: "A123456789",
       },
       insuranceType: {
         type: "string",
         enum: ["GKV", "PKV"],
-        example: "GKV",
       },
-      name: {
+      familyName: {
+        type: "string",
+        example: "Mustermann",
+      },
+      givenNames: {
         type: "array",
         items: {
-          type: "object",
-          properties: {
-            use: {
-              type: "string",
-              enum: [
-                "official",
-                "usual",
-                "temp",
-                "nickname",
-                "anonymous",
-                "old",
-                "maiden",
-              ],
-              example: "official",
-            },
-            family: {
-              type: "string",
-              example: "Mustermann",
-            },
-            given: {
-              type: "array",
-              items: {
-                type: "string",
-                example: ["Max", "Karl"],
-              },
-            },
-          },
+          type: "string",
         },
-      },
-      gender: {
-        type: "string",
-        enum: ["male", "female", "other", "unknown"],
-        example: "male",
+        example: ["Max", "Karl"],
       },
       birthday: {
         type: "string",
         format: "date",
         example: "1998-06-15",
       },
+      gender: {
+        type: "string",
+        enum: [
+          "male",
+          "female",
+          "other",
+          "unknown",
+        ],
+      },
       address: {
-        type: "array",
-        description: "FHIR Patient.address",
-        items: {
-          $ref: "#/components/schemas/AddressCreate",
-        },
-      },
-      telecom: {
-        type: "array",
-        description: "FHIR Patient.telecom",
-        items: {
-          type: "object",
-        },
-      },
-      maritalStatus: {
-        type: "object",
-        description: "FHIR CodeableConcept",
-      },
-      communication: {
-        type: "array",
-        description: "FHIR Patient.communication",
-        items: {
-          type: "object",
-        },
-      },
-      contact: {
-        type: "array",
-        description: "FHIR Patient.contact",
-        items: {
-          type: "object",
-        },
+        oneOf: [
+          {
+            type: "string",
+            example:
+            "Musterstraße 1, 12345 Berlin",
+          },
+          {
+            $ref:
+            "#/components/schemas/AddressCreate",
+          },
+        ],
       },
     },
   },

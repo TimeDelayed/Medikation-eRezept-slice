@@ -1,5 +1,4 @@
-import { VISIT_COMPLETED_ANAMNESIS } from "../constants/fhirConstants.js";
-import Visit from "../db/schema/visit.schema.js";
+import { CONSENT_DECISION_DENY, CONSENT_DECISION_PERMIT, VISIT_COMPLETED_ANAMNESIS } from "../constants/fhirConstants.js";
 
 import {
   fhirGetActiveAnamnesisConsents,
@@ -30,6 +29,7 @@ import {
   checkIfPatientHasPendingVisit,
   createLocalVisit,
   findAllVisits,
+  findPendingVisitById,
 } from "../util/dbHelpers.js";
 
 
@@ -42,9 +42,9 @@ const resolveAnamnesisTransaction = ({
   conditions,
   medicationStatements,
 }) => {
-  if (requestedDecision === "permit") {
+  if (requestedDecision === CONSENT_DECISION_PERMIT) {
     return {
-      decision: "permit",
+      decision: CONSENT_DECISION_PERMIT,
       sendsAnamnesis: true,
       bundle: createPermittedAnamnesisBundle({
         patientId,
@@ -55,9 +55,9 @@ const resolveAnamnesisTransaction = ({
     };
   }
 
-  if (requestedDecision === "deny") {
+  if (requestedDecision === CONSENT_DECISION_DENY) {
     return {
-      decision: "deny",
+      decision: CONSENT_DECISION_DENY,
       sendsAnamnesis: false,
       bundle: createDeniedAnamnesisConsentBundle({
         patientId,
@@ -66,9 +66,9 @@ const resolveAnamnesisTransaction = ({
     };
   }
 
-  if (currentConsent?.provision?.type === "permit") {
+  if (currentConsent?.provision?.type === CONSENT_DECISION_PERMIT) {
     return {
-      decision: "permit",
+      decision: CONSENT_DECISION_PERMIT,
       sendsAnamnesis: true,
       bundle: createAnamnesisDataBundle({
         conditions,
@@ -77,16 +77,16 @@ const resolveAnamnesisTransaction = ({
     };
   }
 
-  if (currentConsent?.provision?.type === "deny") {
+  if (currentConsent?.provision?.type === CONSENT_DECISION_DENY) {
     return {
-      decision: "deny",
+      decision: CONSENT_DECISION_DENY,
       sendsAnamnesis: false,
       bundle: undefined,
     };
   }
 
   return {
-    decision: "deny",
+    decision: CONSENT_DECISION_DENY,
     sendsAnamnesis: false,
     bundle: createDeniedAnamnesisConsentBundle({
       patientId,
@@ -306,7 +306,7 @@ export const submitAnamnesis = async ({
 }) => {
 
   const requestedDecision = getConsentDecision(consent);
-  const visit = await checkIfPatientHasPendingVisit(visitId);
+  const visit = await findPendingVisitById(visitId);
 
   if (!visit) {
     throw new AppError(404, "Visit not found.");

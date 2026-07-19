@@ -41,6 +41,24 @@ export const checkIfPatientHasPendingVisit = async (
 };
 
 /**
+ * Returns a Visit by its public visitId, if it exists in the database
+ * and is not yet completed.
+ *
+ * Returns:
+ * - Visit document if found
+ * - null if no Visit exists or the Visit is already completed
+ */
+export const findPendingVisitById = async (visitId) => {
+  return executeDatabaseOperation(
+    () => Visit.findOne({
+      visitId,
+      visitStatus: { $ne: "done" },
+    }),
+    "Database failed while loading the Visit.",
+  );
+};
+
+/**
  * Returns a Visit containing the supplied KV number.
  *
  * Returns:
