@@ -102,7 +102,8 @@ const createAddress = (address) => {
   if (
     address &&
     typeof address === "object" &&
-    address.text
+    address.text &&
+    !Array.isArray(address)
   ) {
     return createGermanFhirAddress(address);
   }
@@ -279,7 +280,7 @@ export const findOrCreatePatient = async ({
     familyName,
     givenNames,
     birthday,
-    address: [fhirAddress],
+    address: fhirAddress,
     gender,
   });
 
@@ -303,25 +304,12 @@ export const submitAnamnesis = async ({
   medicationStatement,
   consent,
 }) => {
-  const visit = await Visit.findOne({ visitId });
-
-  if (!visit) {
-    const error = new Error("Visit not found.");
-    error.statusCode = 404;
-    throw error;
-  }
 
   const requestedDecision = getConsentDecision(consent);
+  const visit = await checkIfPatientHasPendingVisit(visitId);
 
-  if (
-    requestedDecision &&
-    !["permit", "deny"].includes(requestedDecision)
-  ) {
-    const error = new Error(
-      "Consent decision must be \"permit\" or \"deny\".",
-    );
-    error.statusCode = 400;
-    throw error;
+  if (!visit) {
+    throw new AppError(404, "Visit not found.");
   }
 
   const conditionInputs = toArray(condition);
@@ -335,12 +323,13 @@ export const submitAnamnesis = async ({
     );
 
   if (activeConsents.length > 1) {
-    const error = new Error(
+    throw new AppError(
+      409,
       "Multiple active anamnesis Consents exist for this patient.",
+      {
+        consents: activeConsents,
+      },
     );
-    error.statusCode = 409;
-    error.consents = activeConsents;
-    throw error;
   }
 
   const currentConsent = activeConsents[0];
@@ -427,13 +416,6 @@ export const createVisit = async (
 ) => {
   const patient =
     await findOrCreatePatient(patientInput);
-
-  if (!patient?.id) {
-    throw new AppError(
-      502,
-      "FHIR Patient response did not contain a resource id.",
-    );
-  }
 
   const pendingVisit =
     await checkIfPatientHasPendingVisit(

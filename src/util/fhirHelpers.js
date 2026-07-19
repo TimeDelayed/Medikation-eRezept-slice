@@ -5,9 +5,9 @@ import {
   PKV_IDENTIFIER_SYSTEM,
   IDENTIFIER_TYPE_SYSTEM,
   FHIR_BASE_URL,
+  CONSENT_STATUS_INACTIVE,
 } from "../constants/fhirConstants.js";
 import crypto from "crypto";
-import Visit from "../db/schema/visit.schema.js";
 
 /**
  * Returns the identifier system URI.
@@ -153,7 +153,7 @@ export const deactivateConsent = (consent) => {
 
   return {
     ...consent,
-    status: "inactive",
+    status: CONSENT_STATUS_INACTIVE,
   };
 };
 
@@ -167,8 +167,9 @@ const addressMatches = (patientAddress, address) => {
     return (
       patientAddress.text === address ||
       patientAddress.line?.some((line) => address.includes(line)) ||
-      address.includes(patientAddress.city ?? "") ||
-      address.includes(patientAddress.postalCode ?? "")
+     (patientAddress.city &&
+      address.includes(patientAddress.city)) ||
+      (patientAddress.postalCode && address.includes(patientAddress.postalCode))
     );
   }
 
