@@ -5,13 +5,14 @@ import {
   VALID_CONSENT_DECISIONS,
   CONSENT_SCOPE_SYSTEM,
   CONSENT_STATUS_ACTIVE,
+  CONSENT_DECISION_PERMIT,
+  CONSENT_DECISION_DENY,
 } from "../constants/fhirConstants.js";
 
 import {
   createFhirIdentifier,
   createFhirCodeableConcept,
   createPatientRef,
-  createMedicationRef,
   createPostEntry,
   createPutEntry,
   deactivateConsent,
@@ -71,7 +72,9 @@ export const createFhirPatient = ({
     patient.birthDate = birthday;
   }
   if (address) {
-    patient.address = address;
+    patient.address = Array.isArray(address)
+      ? address
+      : [address];
   }
   if (telecom) {
     patient.telecom = telecom;
@@ -287,7 +290,7 @@ export const createDeniedAnamnesisConsentBundle = ({
   const deniedConsent =
     createFhirAnamnesisConsent({
       patientId,
-      decision: "deny",
+      decision: CONSENT_DECISION_DENY,
     });
 
   return createConsentReplacementBundle({
@@ -312,7 +315,7 @@ export const createPermittedAnamnesisBundle = ({
   const permitConsent =
     createFhirAnamnesisConsent({
       patientId,
-      decision: "permit",
+      decision: CONSENT_DECISION_PERMIT,
     });
 
   return createConsentReplacementBundle({
