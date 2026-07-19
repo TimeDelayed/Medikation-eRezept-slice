@@ -1,15 +1,94 @@
 import Visit from "../db/schema/visit.schema.js";
+import { AppError } from "../errors/AppError.js";
 
-export const checkIfPatientHasPendingVisit = async (patientFhirId) => {
+/**
+ * Executes a database operation and converts database errors
+ * into a consistent AppError.
+ */
+const executeDatabaseOperation = async (
+  operation,
+  errorMessage = "Database operation failed.",
+) => {
   try {
-    return await Visit.findOne({
-      patientFhirId,
-      visitStatus: { $ne: "done" },
-    });
-  } catch (e) {
-    throw new Error("Database failed", {
-      cause: e,
+    return await operation();
+  } catch (error) {
+    throw new AppError(500, errorMessage, {
+      cause: error,
     });
   }
+};
 
+/**
+ * Returns an unfinished Visit for a FHIR Patient.
+ *
+ * Returns:
+ * - Visit document if found
+ * - null if no pending Visit exists
+ */
+export const checkIfPatientHasPendingVisit = async (
+  patientFhirId,
+) => {
+  return executeDatabaseOperation(
+    () =>
+      Visit.findOne({
+        patientFhirId,
+        visitStatus: {
+          $ne: "done",
+        },
+      }),
+    "Database failed while checking for a pending Visit.",
+  );
+};
+
+/**
+ * Returns a Visit containing the supplied KV number.
+ *
+ * Returns:
+ * - Visit document if found
+ * - null if the KV number is not stored locally
+ */
+export const checkIfKvNumberExists = async (kv) => {
+  return executeDatabaseOperation(
+    () => Visit.findOne({ kv }),
+    "Database failed while checking the KV number.",
+  );
+};
+
+/**
+ * Creates a local Visit.
+ */
+export const createLocalVisit = async ({
+  kv,
+  patientFhirId,
+  visitStatus = "started",
+}) => {
+  return executeDatabaseOperation(
+    () =>
+      Visit.create({
+        kv,
+        patientFhirId,
+        visitStatus,
+      }),
+    "Database failed while creating the Visit.",
+  );
+};
+
+/**
+ * Returns all locally stored Visits.
+ */
+export const findAllVisits = async () => {
+  return executeDatabaseOperation(
+    () => Visit.find({}),
+    "Database failed while loading Visits.",
+  );
+};
+
+/**
+ * Returns a Visit by its public visitId.
+ */
+export const findVisitById = async (visitId) => {
+  return executeDatabaseOperation(
+    () => Visit.findOne({ visitId }),
+    "Database failed while loading the Visit.",
+  );
 };

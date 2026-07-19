@@ -4,15 +4,9 @@ import { addAuditOptions } from "../audit/addAuditOptionsMiddelware.js";
 import { auditMiddleware } from "../audit/auditMiddleWare.js";
 import {
   createVisitHandler,
-  getAllVisits,
+  getAllVisitsHandler,
   submitAnamnesisHandler,
-  /*submitAnamnesisHandler*/
-} from "../controller/anamnesisController.js";
-import {
-  createPrescriptionHandler,
-  finalizeVisitHandler,
-  getMedicationHistoryHandler,
-} from "../controller/medicationController.js";
+} from "../controller/visitController.js";
 import { ResourceType } from "../db/schema/ressourceType.js";
 
 // https://expressjs.com/en/guide/writing-middleware/
@@ -130,7 +124,7 @@ router.post("/Patient", addAuditOptions("create", ResourceType.VISIT), createVis
 router.get(
   "/Patient/visits",
   addAuditOptions("get", ResourceType.BUNDLE),
-  getAllVisits,
+  getAllVisitsHandler,
 );
 
 
@@ -226,7 +220,7 @@ router.post(
  *       200:
  *         description: Medication history returned.
  */
-router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", ResourceType.MEDICATION_STATEMENT), getMedicationHistoryHandler);
+//router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", ResourceType.MEDICATION_STATEMENT), getMedicationHistoryHandler);
 
 /**
  * @openapi
@@ -247,7 +241,7 @@ router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", Resourc
  *       201:
  *         description: Prescription created successfully.
  */
-router.post("/visits/:visitId/prescription", addAuditOptions("create", ResourceType.MEDICATION_REQUEST), createPrescriptionHandler);
+//router.post("/visits/:visitId/prescription", addAuditOptions("create", ResourceType.MEDICATION_REQUEST), createPrescriptionHandler);
 
 /**
  * @openapi
@@ -266,7 +260,7 @@ router.post("/visits/:visitId/prescription", addAuditOptions("create", ResourceT
  *       200:
  *         description: Visit finalized successfully.
  */
-router.post("/visits/:visitId/finalize", addAuditOptions("finish Visit", ResourceType.VISIT), finalizeVisitHandler);
+//router.post("/visits/:visitId/finalize", addAuditOptions("finish Visit", ResourceType.VISIT), finalizeVisitHandler);
 
 
 
