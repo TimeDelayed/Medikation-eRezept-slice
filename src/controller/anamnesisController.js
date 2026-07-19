@@ -9,10 +9,12 @@ import Visit from "../db/schema/visit.schema.js";
 import { createFhirPatient } from "../util/mapper.js";
 
 import {
+  createGermanFhirAddress,
   createIdentifierSearchToken,
   patientsTieBreaker,
 } from "../util/fhirHelpers.js";
-import mongoose from "mongoose";
+
+import { submitAnamnesis } from "../services/anamnesisService.js";
 
 /**
  * Finds an existing FHIR Patient or creates a new one.
@@ -34,58 +36,41 @@ const findOrCreatePatient = async ({
 }) => {
   const givenName = givenNames[0];
 
-  const identifier = createIdentifierSearchToken(
-    kv,
-    insuranceType,
-  );
+  const fhirAddress = address?.text
+    ? createGermanFhirAddress(address)
+    : createGermanFhirAddress({ text: address });
 
-  const patientsByIdentifier =
-    await fhirGetPatientByIdentifier(identifier);
+  let patients;
 
-  if (patientsByIdentifier.length === 1) {
-    return patientsByIdentifier[0];
-  }
-
-  if (patientsByIdentifier.length > 1) {
-    const matchingPatient = patientsTieBreaker(
-      patientsByIdentifier,
-      familyName,
-      givenName,
-      birthday,
-      address,
-      gender,
+  if (kv && insuranceType) {
+    const identifier = createIdentifierSearchToken(
+      kv,
+      insuranceType,
     );
 
-    if (matchingPatient) {
-      return matchingPatient;
-    }
-  }
-
-  const patientsByDemographics =
-    await fhirGetPatientsByDemographics({
+    patients = await fhirGetPatientByIdentifier(identifier);
+  } else {
+    patients = await fhirGetPatientsByDemographics({
       familyName,
       givenName,
       birthday,
-      address,
+      address: fhirAddress,
       gender,
     });
-
-  if (patientsByDemographics.length === 1) {
-    return patientsByDemographics[0];
   }
 
-  if (patientsByDemographics.length > 1) {
-    const matchingPatient = patientsTieBreaker(
-      patientsByDemographics,
+  if (patients.length > 0) {
+    const patient = patientsTieBreaker(
+      patients,
       familyName,
       givenName,
       birthday,
-      address,
+      fhirAddress,
       gender,
     );
 
-    if (matchingPatient) {
-      return matchingPatient;
+    if (patient) {
+      return patient;
     }
   }
 
@@ -95,7 +80,7 @@ const findOrCreatePatient = async ({
     familyName,
     givenNames,
     birthday,
-    address,
+    address: fhirAddress,
     gender,
   });
 
@@ -164,6 +149,7 @@ export const createVisitHandler = async (req, res) => {
       visitId: visit.visitId,
       visitStatus: visit.visitStatus,
       patientFhirId: visit.patientFhirId,
+      patient,
     });
   } catch (error) {
     console.error(error);
@@ -187,7 +173,6 @@ export const createVisitHandler = async (req, res) => {
 export const getAllVisits = async (req, res) => {
   try {
     const allVisits = await Visit.find({});
-    console.log(allVisits)
     return res.status(200).json(allVisits);
   } catch (e) {
     return res.status(500).json({
@@ -197,14 +182,54 @@ export const getAllVisits = async (req, res) => {
 };
 
 /**
- * Make an anamnesis
+ * Make an anamnesis.
  *
  * Makes an anamnesis that is stored locally in the Visit. If the patient has a consent or gives his consent,
  * this anamnesis then is send as a transaction bundle to the FHIR server.
- *
  */
-const submitAnamnesisHandler = (req, res) => {
-  const { condition, medicationStatement, consent } = req.body;
-  const { visitId } = req.param;
+export const submitAnamnesisHandler = async (
+  req,
+  res,
+) => {
+  const { visitId } = req.params;
 
+  if (!visitId) {
+    return res.status(400).json({
+      error:
+        "Missing required path parameter: visitId",
+    });
+  }
+
+  try {
+    const result = await submitAnamnesis({
+      visitId,
+      ...req.body,
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.log(
+      JSON.stringify(error.response?.data, null, 2),
+    );
+    return res
+      .status(
+        error.statusCode ??
+          error.response?.status ??
+          502,
+      )
+      .json({
+        status: "error",
+        message:
+          error.message ||
+          "Anamnesis submission failed",
+        ...(error.consents
+          ? { consents: error.consents }
+          : {}),
+        error:
+          error.response?.data?.issue?.map(
+            (issue) =>
+              issue.diagnostics ?? issue.code,
+          ) ?? [error.message],
+      });
+  }
 };

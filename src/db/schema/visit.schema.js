@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { nanoid } from "nanoid";
 import { Schema } from "mongoose";
 import anamnesisSchema from "./anamnesis.schema.js";
+import { VISIT_STATUSES } from "../../constants/fhirConstants.js";
 
 //https://mongoosejs.com/docs/guide.html#timeseries
 const visitSchema = new Schema({
@@ -22,7 +23,7 @@ const visitSchema = new Schema({
   //https://stackoverflow.com/questions/29299477/how-to-create-and-use-enum-in-mongoose
   visitStatus: {
     type: String,
-    enum : ["started","amnesisIsCompleted", "completed"],
+    enum : VISIT_STATUSES,
     required: true,
     default: "started",
   },

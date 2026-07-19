@@ -9,11 +9,6 @@ const anamnesisSchema = new Schema({
     required: true,
     default: () => nanoid(),
   },
-  // needs a patient
-  patientFhirId: {
-    type: String,
-    required: true,
-  },
   preexistingConditions: [{
     code: String,
     display : String,

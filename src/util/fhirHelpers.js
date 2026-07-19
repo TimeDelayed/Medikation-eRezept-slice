@@ -4,7 +4,9 @@ import {
   GKV_IDENTIFIER_SYSTEM,
   PKV_IDENTIFIER_SYSTEM,
   IDENTIFIER_TYPE_SYSTEM,
+  FHIR_BASE_URL,
 } from "../constants/fhirConstants.js";
+import crypto from "crypto";
 
 /**
  * Returns the identifier system URI.
@@ -106,6 +108,7 @@ export const createConsentRef = (consentId) => {
  */
 export const createPostEntry = (resource) => {
   return {
+    fullUrl: `urn:uuid:${crypto.randomUUID()}`,
     resource,
     request: {
       method: "POST",
@@ -126,6 +129,7 @@ export const createPutEntry = (resource) => {
   }
 
   return {
+    fullUrl: `${FHIR_BASE_URL}/${resource.resourceType}/${resource.id}`,
     resource,
     request: {
       method: "PUT",
@@ -206,33 +210,36 @@ export const patientsTieBreaker = (
 };
 
 /**
- * Creates a FHIR Address.
+ * Creates a minimal FHIR Address.
  *
  * Required:
- * - street
- * - houseNumber
- * - postalCode
- * - city
+ * - text
  *
  * Optional:
  * - country (default: DE)
  * - use (default: home)
  * - type (default: both)
+ *
+ * https://hl7.org/fhir/R4/datatypes.html#Address
  */
-export const createFhirAddress = ({
+export const createGermanFhirAddress = ({
   street,
   houseNumber,
   postalCode,
   city,
+  text,
   country = "DE",
   use = "home",
   type = "both",
 }) => ({
   use,
-  type,
-  line: [`${street} ${houseNumber}`],
+  ...(street && houseNumber
+    ? { line: [`${street} ${houseNumber}`] }
+    : {}),
   city,
   postalCode,
+  type,
+  text,
   country,
 });
 
@@ -264,4 +271,18 @@ export const createFhirTelecom = ({ system, value, use, rank }) => {
   return telecom;
 };
 
+export const getConsentDecision = (consent) => {
+  if (typeof consent === "string") {
+    return consent;
+  }
 
+  return consent?.decision;
+};
+
+export const getCreatedConsentId = (transactionResult) => {
+  const location = transactionResult?.entry?.find((entry) =>
+    entry.response?.location?.startsWith("Consent/"),
+  )?.response?.location;
+
+  return location?.split("/")[1];
+};

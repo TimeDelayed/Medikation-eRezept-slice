@@ -139,23 +139,52 @@ export const createFhirAnamnesisConsent = ({
 };
 
 /**
+ * Creates FHIR Condition resources for a patient.
+ */
+export const createFhirConditions = (
+  patientId,
+  conditions = [],
+) => {
+  return conditions.map((condition) =>
+    createFhirCondition({
+      patientId,
+      ...condition,
+    }),
+  );
+};
+
+/**
+ * Creates FHIR MedicationStatement resources for a patient.
+ */
+export const createFhirMedicationStatements = (
+  patientId,
+  medicationStatements = [],
+) => {
+  return medicationStatements.map(
+    (medicationStatement) =>
+      createFhirMedicationStatement({
+        patientId,
+        ...medicationStatement,
+      }),
+  );
+};
+
+/**
  * Creates a minimal FHIR Condition.
  */
 export const createFhirCondition = ({
   patientId,
-  conditionCode,
-  diagnosis,
-}) => {
-  return {
-    resourceType: "Condition",
-    subject: createPatientRef(patientId),
-    code: createFhirCodeableConcept(
-      conditionCode,
-      "condition",
-      diagnosis,
-    ),
-  };
-};
+  code,
+  display,
+}) => ({
+  resourceType: "Condition",
+  subject: createPatientRef(patientId),
+  code: createFhirCodeableConcept(
+    code,
+    "condition",
+    display,
+  ),
+});
 
 /**
  * Creates a minimal FHIR Medication.
@@ -179,17 +208,19 @@ export const createFhirMedication = ({
  */
 export const createFhirMedicationStatement = ({
   patientId,
+  status = "active",
+  code,
+  display,
+}) => ({
+  resourceType: "MedicationStatement",
   status,
-  medicationId,
-}) => {
-  return {
-    resourceType: "MedicationStatement",
-    status,
-    medicationReference:
-      createMedicationRef(medicationId),
-    subject: createPatientRef(patientId),
-  };
-};
+  medicationCodeableConcept: createFhirCodeableConcept(
+    code,
+    "medication",
+    display,
+  ),
+  subject: createPatientRef(patientId),
+});
 
 /**
  * Creates a generic FHIR transaction Bundle.

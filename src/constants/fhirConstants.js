@@ -58,3 +58,14 @@ export const CONSENT_DECISIONS = [
   CONSENT_DECISION_PERMIT,
   CONSENT_DECISION_DENY,
 ];
+
+// ---------- Visit status ----------
+export const VISIT_STARTED_STATUS = "started";
+export const VISIT_COMPLETED_ANAMNESIS = "amnesisIsCompleted";
+export const VISIT_FINALIZED = "completed";
+
+export const VISIT_STATUSES = [
+  VISIT_STARTED_STATUS,
+  VISIT_COMPLETED_ANAMNESIS,
+  VISIT_FINALIZED,
+];

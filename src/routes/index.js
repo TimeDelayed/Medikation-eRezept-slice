@@ -5,6 +5,7 @@ import { auditMiddleware } from "../audit/auditMiddleWare.js";
 import {
   createVisitHandler,
   getAllVisits,
+  submitAnamnesisHandler,
   /*submitAnamnesisHandler*/
 } from "../controller/anamnesisController.js";
 import {
@@ -137,25 +138,74 @@ router.get(
 
 /**
  * @openapi
- * /visits/{visitId}/anamnesis:
+ * /Visit/{visitId}/anamnesis:
  *   post:
  *     tags:
- *       - Anamnesis
- *     summary: Submits the patient's anamnesis.
- *     description: Updates the corresponding FHIR Patient resource.
+ *       - Visit
+ *     summary: Submits an anamnesis for a visit.
+ *     description: >
+ *       Stores the anamnesis locally for the specified visit.
+ *       Depending on the patient's consent, the anamnesis is either stored only locally
+ *       or transmitted to the FHIR server as a transaction bundle together with the Consent.
  *     parameters:
  *       - in: path
  *         name: visitId
  *         required: true
  *         schema:
  *           type: string
+ *         description: Local Visit identifier.
  *     requestBody:
  *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               consent:
+ *                 type: string
+ *                 enum:
+ *                   - permit
+ *                   - deny
+ *                 description: >
+ *                   Optional. If omitted, the currently active Consent on the
+ *                   FHIR server is used. If none exists, a deny Consent is created.
+ *               condition:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                     display:
+ *                       type: string
+ *               medicationStatement:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: cfsb1758031032850
+ *                     display:
+ *                       type: string
+ *                       example: Atorvastatin-ratiopharm® 40mg 30 Filmtbl. N1
  *     responses:
  *       200:
- *         description: Anamnesis submitted successfully.
- *
-router.post("/visits/:visitId/anamnesis", addAuditOptions("Update Visit", ResourceType.VISIT), submitAnamnesisHandler);*/
+ *         description: Anamnesis successfully processed.
+ *       400:
+ *         description: Invalid request.
+ *       404:
+ *         description: Visit not found.
+ *       409:
+ *         description: Multiple active Consents found for the patient.
+ *       502:
+ *         description: FHIR server request failed.
+ */
+router.post(
+  "/Visit/:visitId/anamnesis",
+  addAuditOptions("create", ResourceType.BUNDLE),
+  submitAnamnesisHandler,
+);
 
 // ---------- Medication ----------
 
