@@ -2,7 +2,7 @@ import {
   ANAMNESIS_CONSENT_CATEGORY,
   ANAMNESIS_CONSENT_DISPLAY,
   CONSENT_CODESYSTEM_NAME,
-  CONSENT_DECISIONS,
+  VALID_CONSENT_DECISIONS,
   CONSENT_SCOPE_SYSTEM,
   CONSENT_STATUS_ACTIVE,
 } from "../constants/fhirConstants.js";
@@ -106,7 +106,7 @@ export const createFhirAnamnesisConsent = ({
   patientId,
   decision,
 }) => {
-  if (!CONSENT_DECISIONS.includes(decision)) {
+  if (!VALID_CONSENT_DECISIONS.includes(decision)) {
     throw new Error(
       "Consent decision must be \"permit\" or \"deny\".",
     );

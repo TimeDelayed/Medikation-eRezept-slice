@@ -22,6 +22,11 @@ export const PKV_IDENTIFIER_SYSTEM =
 export const IDENTIFIER_TYPE_SYSTEM =
   "http://terminology.hl7.org/CodeSystem/v2-0203";
 
+export const INSURANCE_TYPE_GKV = "GKV";
+export const INSURANCE_TYPE_PKV = "PKV";
+
+export const VALID_INSURANCE_TYPES = [INSURANCE_TYPE_GKV, INSURANCE_TYPE_PKV];
+
 // ---------- Consent systems ----------
 
 export const CONSENT_SCOPE_SYSTEM =
@@ -44,6 +49,18 @@ export const ANAMNESIS_CONSENT_DISPLAY =
 export const ANAMNESIS_CONSENT_CATEGORY_TOKEN =
   `${CONSENT_CODESYSTEM}|${ANAMNESIS_CONSENT_CATEGORY}`;
 
+export const PATIENT_GENDER_MALE = "male";
+export const PATIENT_GENDER_FEMALE = "female";
+export const PATIENT_GENDER_OTHER = "other";
+export const PATIENT_GENDER_UNKNOWN = "unknown";
+
+export const VALID_GENDERS = [
+  PATIENT_GENDER_MALE,
+  PATIENT_GENDER_FEMALE,
+  PATIENT_GENDER_OTHER,
+  PATIENT_GENDER_UNKNOWN,
+];
+
 // ---------- Consent status ----------
 
 export const CONSENT_STATUS_ACTIVE = "active";
@@ -54,7 +71,7 @@ export const CONSENT_STATUS_INACTIVE = "inactive";
 export const CONSENT_DECISION_PERMIT = "permit";
 export const CONSENT_DECISION_DENY = "deny";
 
-export const CONSENT_DECISIONS = [
+export const VALID_CONSENT_DECISIONS = [
   CONSENT_DECISION_PERMIT,
   CONSENT_DECISION_DENY,
 ];
