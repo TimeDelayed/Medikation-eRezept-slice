@@ -41,9 +41,35 @@ router.get("/ping", (_, res) => res.json({ version: "2.13.0" }));
  *     tags:
  *       - Authentication
  *     summary: Performs a dummy login.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "admin"
+ *               password:
+ *                 type: string
+ *                 example: "admin"
  *     responses:
  *       200:
  *         description: Login successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT for 60 days
+ *       401:
+ *         description: Invalid credentials (Wrong Username or Password)
  */
 
 router.use(auditMiddleware);
