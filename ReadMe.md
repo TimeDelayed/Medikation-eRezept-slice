@@ -7,7 +7,7 @@ Lea Feilberg steht zwar auf Miro als Gruppenmitglied, hat sich aber entschieden 
 Dies wurde im privaten chat abgesprochen.
 
 ### Hinweis zur Gruppenarbeit
-Nikita und ich haben dieses Repo gemeinsam erarbeitet und an einigen Stellen Co-Working und Pair-Programming betrieben.
+Nikita und Nils haben dieses Repo gemeinsam erarbeitet und an einigen Stellen Co-Working und Pair-Programming betrieben.
 Die Leistung verteilt sich somit auf etwa 50 / 50.
 
 ## Anforderungen an das Projekt und unsere Grundlagen
