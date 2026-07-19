@@ -1,3 +1,4 @@
+import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED, VISIT_STARTED_STATUS } from "../constants/fhirConstants.js";
 import Visit from "../db/schema/visit.schema.js";
 import { AppError } from "../errors/AppError.js";
 
@@ -37,6 +38,24 @@ export const checkIfPatientHasPendingVisit = async (
         },
       }),
     "Database failed while checking for a pending Visit.",
+  );
+};
+
+/**
+ * Returns a Visit by its public visitId, if it exists in the database
+ * and is not yet completed.
+ *
+ * Returns:
+ * - Visit document if found
+ * - null if no Visit exists or the Visit is already completed
+ */
+export const findPendingVisitById = async (visitId) => {
+  return executeDatabaseOperation(
+    () => Visit.findOne({
+      visitId,
+      visitStatus: { $in: [VISIT_STARTED_STATUS] },
+    }),
+    "Database failed while loading the Visit.",
   );
 };
 
