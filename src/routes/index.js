@@ -3,12 +3,13 @@ import { handleDummyLogin, securityMiddleware } from "../auth/auth.js";
 import { addAuditOptions } from "../audit/addAuditOptionsMiddelware.js";
 import { auditMiddleware } from "../audit/auditMiddleWare.js";
 import {
+  createMedicationRequestBundleHandler,
   createVisitHandler,
   getAllVisitsHandler,
   submitAnamnesisHandler,
 } from "../controller/visitController.js";
 import { ResourceType } from "../db/schema/ressourceType.js";
-import { getMedicationStatementHandler } from "../controller/MedicationController.js";
+import { getMedicationStatementHandler } from "../controller/medicationController.js";
 
 // https://expressjs.com/en/guide/writing-middleware/
 // https://expressjs.com/en/5x/guide/routing/
@@ -255,20 +256,47 @@ router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", Resourc
  *   post:
  *     tags:
  *       - Medication
- *     summary: Creates a prescription.
+ *     summary: Creates a prescription for the patient of a visit.
+ *     description: >
+ *       Creates a FHIR MedicationRequest for the patient linked to the visit
+ *       and sends it to the FHIR server as a transaction bundle.
+ *       A Provenance resource documenting the prescribing physician is added automatically.
  *     parameters:
  *       - in: path
  *         name: visitId
  *         required: true
  *         schema:
  *           type: string
+ *         description: Local Visit identifier.
  *     requestBody:
  *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *               - display
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: Medication code.
+ *                 example: cfsb1758031032850
+ *               display:
+ *                 type: string
+ *                 description: Human readable medication name.
+ *                 example: Atorvastatin-ratiopharm® 40mg 30 Filmtbl. N1
  *     responses:
  *       201:
  *         description: Prescription created successfully.
+ *       400:
+ *         description: Invalid request.
+ *       404:
+ *         description: Visit not found.
+ *       502:
+ *         description: FHIR server request failed.
  */
-//router.post("/visits/:visitId/prescription", addAuditOptions("create", ResourceType.MEDICATION_REQUEST), createPrescriptionHandler);
+router.post("/visits/:visitId/prescription", addAuditOptions("create", ResourceType.MEDICATION_REQUEST), createMedicationRequestBundleHandler);
 
 /**
  * @openapi
