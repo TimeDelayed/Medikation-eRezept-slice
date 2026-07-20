@@ -1,6 +1,8 @@
+
 import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED, VISIT_STARTED_STATUS } from "../constants/fhirConstants.js";
 import Visit from "../db/schema/visit.schema.js";
 import { AppError } from "../errors/AppError.js";
+import { hashHelperKV as hashHelperKV } from "./hashingHelper.js";
 
 /**
  * Executes a database operation and converts database errors
@@ -67,8 +69,10 @@ export const findPendingVisitById = async (visitId) => {
  * - null if the KV number is not stored locally
  */
 export const checkIfKvNumberExists = async (kv) => {
+  const kvHash = hashHelperKV(kv);
+
   return executeDatabaseOperation(
-    () => Visit.findOne({ kv }),
+    () => Visit.findOne({ kvHash }),
     "Database failed while checking the KV number.",
   );
 };
@@ -81,10 +85,11 @@ export const createLocalVisit = async ({
   patientFhirId,
   visitStatus = "started",
 }) => {
+  const kvHash = hashHelperKV(kv);
   return executeDatabaseOperation(
     () =>
       Visit.create({
-        kv,
+        kvHash,
         patientFhirId,
         visitStatus,
       }),

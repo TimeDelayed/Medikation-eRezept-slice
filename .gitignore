@@ -6,6 +6,7 @@ database
 
 private.key
 public.key
+kv.hash
 
 .yarn/*
 !.yarn/patches

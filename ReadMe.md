@@ -56,6 +56,19 @@ Jede API-Operation wird protokolliert (Akteur inkl. Rollen, Aktion, Ressourcenty
 Das setzt den Gedanken der FHIR-`Provenance`/`AuditEvent`-Ressourcen ("wo kommen die Daten her, wer hat was getan?") auf Anwendungsebene um.
 Wir haben uns an dieser Stelle dagegen entschieden die FHIR Audits zu verwenden, da wir lieber ein internes Audit haben wollten und das FHIR Audit keine Pflicht darstellt. 
 
+### 6. Pseudonymisierung der KV-Nummer
+
+Bei Grundsatz 1 ist uns aufgefallen, dass wir uns an einer Stelle selbst widersprechen: Die KV-Nummer stand bei uns im Klartext in der Datenbank, obwohl sie ein direkt identifizierendes Merkmal ist.
+
+Ganz weglassen konnten wir sie aber nicht, weil wir beim Anlegen eines `Visit` prüfen müssen, ob die KV-Nummer schon existiert.
+Für diesen Vergleich macht es allerdings keinen Unterschied, ob der Wert im Klartext oder gehasht vorliegt – gleiche Eingabe ergibt immer den gleichen Hash.
+Somit für unseren Zweck perfekt. 
+
+Gespeichert wird deshalb nur noch `kvHash`. Gehasht wird erst direkt vor dem Schreiben in die Datenbank (`util/dbHelpers.js`) – vorher braucht der Service die echte KV-Nummer noch für die Patientensuche auf FHIR.
+
+Wir benutzen **HMAC-SHA256**. Dabei fließt zusätzlich ein geheimer Schlüssel in den Hash ein, der sogenannte Pepper (`kv.hash`).
+Der liegt als Datei beim Code und nicht in der Datenbank. Ohne ihn kann man die Hashes gar nicht erst nachbauen, das Durchprobieren bringt also nichts mehr.
+
 ### Ableitung der Architektur
 
 Bereits früh im Projekt haben wir ein erstes UML für den Ablauf in der Arztpraxis vorbereitet, das für uns logisch erschien und an dem wir uns über die gesamte Projektlaufzeit orientiert haben:
@@ -67,7 +80,7 @@ Aus diesen Grundsteinen und dem Ablauf entstand die folgende Schichtenarchitektu
 ![Medication Service Architektur](docs/Architecture.svg)
 
 ## Setup
-Es müssen ein private.key und ein public.key im repo liegen. 
+Es müssen ein private.key, ein public.key und ein kv.hash im repo liegen. 
 Diese können über die unteren Befehle erzeugt werden. 
 
 ## Prerequisites
@@ -87,6 +100,13 @@ openssl genrsa -out ./private.key 4096
 ### PUBLIC_KEY
 ````bash 
 openssl rsa -in ./private.key -pubout -outform PEM -out ./public.key
+````
+
+## Generate the KV_PEPPER
+
+Geheimnis Pseudonymisierung KV
+````bash 
+openssl rand -hex 32 | tr -d '\n' > ./kv.hash
 ````
 
 ## Project setup

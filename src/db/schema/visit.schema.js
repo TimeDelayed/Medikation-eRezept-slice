@@ -12,9 +12,10 @@ const visitSchema = new Schema({
     required: true,
     default: () => nanoid(),
   },
-  kv: {
+  kvHash: {
     type: String,
     required: true,
+    unique: true,
   },
   patientFhirId: {
     type: String,
