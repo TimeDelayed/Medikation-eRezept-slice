@@ -10,6 +10,7 @@ export const FHIR_NAMESPACE =
 
 export const CODESYSTEM_PATH = "/CodeSystem";
 export const NAMINGSYSTEM_PATH = "/NamingSystem";
+export const USERS_NAMESPACE = "/users";
 
 // ---------- Identifier systems ----------
 

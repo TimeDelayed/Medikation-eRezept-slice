@@ -7,6 +7,8 @@ import {
   CONSENT_STATUS_ACTIVE,
   CONSENT_DECISION_PERMIT,
   CONSENT_DECISION_DENY,
+  FHIR_NAMESPACE,
+  USERS_NAMESPACE,
 } from "../constants/fhirConstants.js";
 
 import {
@@ -227,16 +229,31 @@ export const createFhirMedicationStatement = ({
 
 /**
  * Creates a generic FHIR transaction Bundle.
+ *
+ * A Provenance resource targeting every submitted resource
+ * is automatically added to the transaction.
  */
 export const createFhirTransactionBundle = (
   resources,
+  user,
 ) => {
+  const entries = resources.map(createPostEntry);
+
+  const provenance =
+    createFhirProvenanceFromEntries({
+      entries,
+      user,
+    });
+
+  entries.push(createPostEntry(provenance));
+
   return {
     resourceType: "Bundle",
     type: "transaction",
-    entry: resources.map(createPostEntry),
+    entry: entries,
   };
 };
+
 
 /**
  * Creates a transaction Bundle that replaces
@@ -246,14 +263,13 @@ export const createFhirTransactionBundle = (
  * 1. Sets the existing active Consent to inactive, if present.
  * 2. Creates a new active Consent with permit or deny.
  * 3. Optionally creates additional FHIR resources.
- *
- * Use with an empty resources array for a denied Consent
- * that must be stored without sharing anamnesis data.
+ * 4. Creates a Provenance for all written resources.
  */
 export const createConsentReplacementBundle = ({
   currentConsent,
   newConsent,
   resources = [],
+  user,
 }) => {
   const entries = [];
 
@@ -270,6 +286,14 @@ export const createConsentReplacementBundle = ({
     entries.push(createPostEntry(resource));
   }
 
+  const provenance =
+    createFhirProvenanceFromEntries({
+      entries,
+      user,
+    });
+
+  entries.push(createPostEntry(provenance));
+
   return {
     resourceType: "Bundle",
     type: "transaction",
@@ -281,11 +305,12 @@ export const createConsentReplacementBundle = ({
  * Creates the transaction used when the patient
  * denies sharing anamnesis data.
  *
- * Only Consent resources are written to FHIR.
+ * Only Consent and Provenance resources are written to FHIR.
  */
 export const createDeniedAnamnesisConsentBundle = ({
   patientId,
   currentConsent,
+  user,
 }) => {
   const deniedConsent =
     createFhirAnamnesisConsent({
@@ -296,6 +321,7 @@ export const createDeniedAnamnesisConsentBundle = ({
   return createConsentReplacementBundle({
     currentConsent,
     newConsent: deniedConsent,
+    user,
   });
 };
 
@@ -304,13 +330,14 @@ export const createDeniedAnamnesisConsentBundle = ({
  *
  * The previous active Consent is deactivated.
  * A new active permit Consent is created together with
- * the Conditions and MedicationStatements.
+ * the Conditions, MedicationStatements and Provenance.
  */
 export const createPermittedAnamnesisBundle = ({
   patientId,
   currentConsent,
   conditions = [],
   medicationStatements = [],
+  user,
 }) => {
   const permitConsent =
     createFhirAnamnesisConsent({
@@ -325,21 +352,103 @@ export const createPermittedAnamnesisBundle = ({
       ...conditions,
       ...medicationStatements,
     ],
+    user,
   });
 };
+
+/**
+ * Creates a FHIR Provenance for an EasyHealth transaction.
+ *
+ * Required:
+ * - targetReferences
+ * - user.sub
+ * - user.name
+ */
+export const createFhirProvenanceForEasyHealth = ({
+  targetReferences,
+  user,
+}) => {
+  if (
+    !Array.isArray(targetReferences) ||
+    targetReferences.length === 0
+  ) {
+    throw new Error(
+      "At least one Provenance target is required.",
+    );
+  }
+
+  if (!user?.sub || !user?.name) {
+    throw new Error(
+      "Authenticated user is required for Provenance.",
+    );
+  }
+
+  return {
+    resourceType: "Provenance",
+    target: targetReferences.map((reference) => ({
+      reference,
+    })),
+    recorded: new Date().toISOString(),
+    agent: [
+      {
+        type: {
+          text: "author",
+        },
+        who: {
+          identifier: {
+            system: `${FHIR_NAMESPACE}${USERS_NAMESPACE}`,
+            value: user.sub,
+          },
+          display: user.name,
+        },
+        onBehalfOf: {
+          reference: "Organization/easyhealth",
+          display: "EasyHealth",
+        },
+      },
+    ],
+  };
+};
+
+/**
+ * Creates Provenance for all resources already contained
+ * in a transaction.
+ *
+ * The Provenance itself is deliberately not included
+ * as one of its own targets.
+ */
+export const createFhirProvenanceFromEntries = ({
+  entries,
+  user,
+}) => {
+  const targetReferences = entries
+    .map((entry) => entry.fullUrl)
+    .filter(Boolean);
+
+  return createFhirProvenanceForEasyHealth({
+    targetReferences,
+    user,
+  });
+};
+
 
 /**
  * Creates a FHIR transaction for anamnesis resources
  * when an existing active permit Consent remains valid.
  *
  * The existing Consent is not posted again.
+ * Provenance is added for the newly submitted resources.
  */
 export const createAnamnesisDataBundle = ({
   conditions = [],
   medicationStatements = [],
+  user,
 }) => {
-  return createFhirTransactionBundle([
-    ...conditions,
-    ...medicationStatements,
-  ]);
+  return createFhirTransactionBundle(
+    [
+      ...conditions,
+      ...medicationStatements,
+    ],
+    user,
+  );
 };

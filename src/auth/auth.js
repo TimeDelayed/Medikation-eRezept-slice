@@ -10,7 +10,7 @@ export const securityMiddleware = async (req, res, next) => {
     const tokenSplit = req.headers?.authorization?.split(" ");
     const token = tokenSplit?.[1];
     if (tokenSplit?.[0] !== "Bearer") {
-      throw Error("No baerer keyword found");
+      throw Error("No bearer keyword found");
     }
 
     req.user = jwt.verify(token, publicKey, { algorithms: ["RS256"] });
@@ -33,9 +33,10 @@ export const handleDummyLogin = (req, res) => {
   }
 
   const roles = ["admin", "physician"];
-  const randomNumber = Math.floor(Math.random() * 100);
+  //const randomNumber = Math.floor(Math.random() * 100);
   const token = jwt.sign({
-    name: `Example physician ${randomNumber}`,
+    sub: username,
+    name: "Example physician",
     roles: roles,
   }, privateKey, { expiresIn: "60d",  algorithm: "RS256" });
   console.log("Generated JWT token:", token);

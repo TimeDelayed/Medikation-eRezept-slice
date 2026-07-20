@@ -41,8 +41,12 @@ const resolveAnamnesisTransaction = ({
   currentConsent,
   conditions,
   medicationStatements,
+  user,
 }) => {
-  if (requestedDecision === CONSENT_DECISION_PERMIT) {
+  if (
+    requestedDecision ===
+    CONSENT_DECISION_PERMIT
+  ) {
     return {
       decision: CONSENT_DECISION_PERMIT,
       sendsAnamnesis: true,
@@ -51,33 +55,46 @@ const resolveAnamnesisTransaction = ({
         currentConsent,
         conditions,
         medicationStatements,
+        user,
       }),
     };
   }
 
-  if (requestedDecision === CONSENT_DECISION_DENY) {
+  if (
+    requestedDecision ===
+    CONSENT_DECISION_DENY
+  ) {
     return {
       decision: CONSENT_DECISION_DENY,
       sendsAnamnesis: false,
-      bundle: createDeniedAnamnesisConsentBundle({
-        patientId,
-        currentConsent,
-      }),
+      bundle:
+        createDeniedAnamnesisConsentBundle({
+          patientId,
+          currentConsent,
+          user,
+        }),
     };
   }
 
-  if (currentConsent?.provision?.type === CONSENT_DECISION_PERMIT) {
+  if (
+    currentConsent?.provision?.type ===
+    CONSENT_DECISION_PERMIT
+  ) {
     return {
       decision: CONSENT_DECISION_PERMIT,
       sendsAnamnesis: true,
       bundle: createAnamnesisDataBundle({
         conditions,
         medicationStatements,
+        user,
       }),
     };
   }
-
-  if (currentConsent?.provision?.type === CONSENT_DECISION_DENY) {
+  // Current consent is denied, so no new consent is created and no anamnesis data is sent to FHIR.
+  if (
+    currentConsent?.provision?.type ===
+    CONSENT_DECISION_DENY
+  ) {
     return {
       decision: CONSENT_DECISION_DENY,
       sendsAnamnesis: false,
@@ -85,12 +102,17 @@ const resolveAnamnesisTransaction = ({
     };
   }
 
+  // No current consent exists, and consent was not given in anamnesis so a new denied consent is created and no anamnesis data is sent to FHIR.
+  // This is the default case when no consent decision was provided and no current consent exists.
+  // It is tantamount to not signing a consent form, which is equivalent to denying consent.
   return {
     decision: CONSENT_DECISION_DENY,
     sendsAnamnesis: false,
-    bundle: createDeniedAnamnesisConsentBundle({
-      patientId,
-    }),
+    bundle:
+      createDeniedAnamnesisConsentBundle({
+        patientId,
+        user,
+      }),
   };
 };
 
@@ -303,6 +325,7 @@ export const submitAnamnesis = async ({
   condition,
   medicationStatement,
   consent,
+  user,
 }) => {
 
   const requestedDecision = getConsentDecision(consent);
@@ -352,6 +375,7 @@ export const submitAnamnesis = async ({
       currentConsent,
       conditions,
       medicationStatements,
+      user,
     });
 
   const transactionResult = transaction.bundle

@@ -91,6 +91,7 @@ export const submitAnamnesisHandler = async (
 
     const result = await submitAnamnesis({
       visitId,
+      user: req.user,
       ...req.body,
     });
 
