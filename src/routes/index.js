@@ -8,6 +8,7 @@ import {
   submitAnamnesisHandler,
 } from "../controller/visitController.js";
 import { ResourceType } from "../db/schema/ressourceType.js";
+import { getMedicationStatementHandler } from "../controller/MedicationController.js";
 
 // https://expressjs.com/en/guide/writing-middleware/
 // https://expressjs.com/en/5x/guide/routing/
@@ -246,7 +247,7 @@ router.post(
  *       200:
  *         description: Medication history returned.
  */
-//router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", ResourceType.MEDICATION_STATEMENT), getMedicationHistoryHandler);
+router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", ResourceType.MEDICATION_STATEMENT), getMedicationStatementHandler);
 
 /**
  * @openapi
