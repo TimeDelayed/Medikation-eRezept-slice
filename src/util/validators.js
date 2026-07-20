@@ -29,9 +29,9 @@ const isValidAddress = (address) => {
 };
 
 /**
- * Validates the request body used to start a Visit.
+ * Validates the request body used to start a Visit via demographics search or create.
  */
-export const validateCreateVisitInput = (body) => {
+export const validateCreateVisitDemographicsInput = (body) => {
   if (!body || typeof body !== "object") {
     throw new AppError(
       400,
@@ -40,8 +40,6 @@ export const validateCreateVisitInput = (body) => {
   }
 
   const {
-    kv,
-    insuranceType,
     familyName,
     givenNames,
     birthday,
@@ -50,14 +48,6 @@ export const validateCreateVisitInput = (body) => {
   } = body;
 
   const missingFields = [];
-
-  if (!isNonEmptyString(kv)) {
-    missingFields.push("kv");
-  }
-
-  if (!isNonEmptyString(insuranceType)) {
-    missingFields.push("insuranceType");
-  }
 
   if (!isNonEmptyString(familyName)) {
     missingFields.push("familyName");
@@ -92,17 +82,6 @@ export const validateCreateVisitInput = (body) => {
     );
   }
 
-  if (
-    !VALID_INSURANCE_TYPES.includes(
-      insuranceType,
-    )
-  ) {
-    throw new AppError(
-      400,
-      "insuranceType must be GKV or PKV.",
-    );
-  }
-
   if (!VALID_GENDERS.includes(gender)) {
     throw new AppError(
       400,
@@ -123,6 +102,41 @@ export const validateCreateVisitInput = (body) => {
       "address must either be a non-empty string or an object containing text.",
     );
   }
+};
+
+/**
+ * Validates the request body used to start a Visit via kv search.
+ */
+export const validateCreateVisitKVInput = (body) => {
+  if (!body || typeof body !== "object") {
+    throw new AppError(
+      400,
+      "A JSON request body is required.",
+    );
+  }
+  const {
+    kv,
+    insuranceType,
+  } = body;
+  const missingFields = [];
+
+  if (!isNonEmptyString(kv)) {
+    missingFields.push("kv");
+  }
+  if (!insuranceType) {
+    missingFields.push("insuranceType");
+  }
+  if (
+    !VALID_INSURANCE_TYPES.includes(
+      insuranceType,
+    )
+  ) {
+    throw new AppError(
+      400,
+      "insuranceType must be GKV or PKV.",
+    );
+  }
+
 };
 
 /**

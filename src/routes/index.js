@@ -3,7 +3,8 @@ import { handleDummyLogin, securityMiddleware } from "../auth/auth.js";
 import { addAuditOptions } from "../audit/addAuditOptionsMiddelware.js";
 import { auditMiddleware } from "../audit/auditMiddleWare.js";
 import {
-  createVisitHandler,
+  createVisitDemographicsHandler,
+  createVisitKVHandler,
   getAllVisitsHandler,
   submitAnamnesisHandler,
 } from "../controller/visitController.js";
@@ -76,16 +77,16 @@ router.use(securityMiddleware);
 
 /**
  * @openapi
- * /Patient:
+ * /Patient/kv:
  *   post:
  *     tags:
  *       - Visit
- *     summary: Starts a new patient visit.
+ *     summary: Starts a new visit using a patient's insurance number.
  *     description: >
- *       Searches for an existing FHIR Patient using the insurance identifier
- *       and demographic information. If no matching Patient exists, a new
- *       FHIR Patient is created. A local Visit is then stored with the
- *       resulting FHIR Patient id.
+ *       Searches an existing FHIR Patient by KV number.
+ *       If found, a new local Visit is created.
+ *       If the patient already has an unfinished Visit,
+ *       the request is rejected.
  *     requestBody:
  *       required: true
  *       content:
@@ -95,11 +96,6 @@ router.use(securityMiddleware);
  *             required:
  *               - kv
  *               - insuranceType
- *               - familyName
- *               - givenNames
- *               - birthday
- *               - address
- *               - gender
  *             properties:
  *               kv:
  *                 type: string
@@ -107,6 +103,47 @@ router.use(securityMiddleware);
  *               insuranceType:
  *                 type: string
  *                 enum: [GKV, PKV]
+ *     responses:
+ *       201:
+ *         description: Visit successfully created.
+ *       404:
+ *         description: No patient with the given insurance identifier exists.
+ *       409:
+ *         description: Patient already has a pending Visit.
+ *       502:
+ *         description: FHIR lookup failed.
+ */
+router.post(
+  "/Patient/kv",
+  addAuditOptions("create", ResourceType.VISIT),
+  createVisitKVHandler,
+);
+
+/**
+ * @openapi
+ * /Patient/demographics:
+ *   post:
+ *     tags:
+ *       - Visit
+ *     summary: Starts a new visit using demographic data.
+ *     description: >
+ *       Searches an existing FHIR Patient by demographic information.
+ *       If no matching Patient exists, a new FHIR Patient is created
+ *       using a practice-internal identifier.
+ *       A new local Visit is then created.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - familyName
+ *               - givenNames
+ *               - birthday
+ *               - address
+ *               - gender
+ *             properties:
  *               familyName:
  *                 type: string
  *                 example: "Mustermann"
@@ -128,12 +165,16 @@ router.use(securityMiddleware);
  *     responses:
  *       201:
  *         description: Visit successfully created.
- *       400:
- *         description: Required patient information is missing.
+ *       409:
+ *         description: Patient already has a pending Visit.
  *       502:
- *         description: FHIR Patient lookup or creation failed.
+ *         description: FHIR lookup or patient creation failed.
  */
-router.post("/Patient", addAuditOptions("create", ResourceType.VISIT), createVisitHandler);
+router.post(
+  "/Patient/demographics",
+  addAuditOptions("create", ResourceType.VISIT),
+  createVisitDemographicsHandler,
+);
 
 /**
  * @openapi

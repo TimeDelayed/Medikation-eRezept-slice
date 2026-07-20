@@ -28,6 +28,9 @@ export const INSURANCE_TYPE_PKV = "PKV";
 
 export const VALID_INSURANCE_TYPES = [INSURANCE_TYPE_GKV, INSURANCE_TYPE_PKV];
 
+export const IDENTIFIER_INTERNAL_SYSTEM =
+  `${FHIR_NAMESPACE}/identifier/internal`;
+
 // ---------- Consent systems ----------
 
 export const CONSENT_SCOPE_SYSTEM =

@@ -22,16 +22,16 @@ import {
   createFhirConditions,
   createFhirMedicationStatements,
   createFhirPatient,
+  createInternalIdentifier,
 } from "../util/mapper.js";
 
 import {
-  checkIfKvNumberExists,
   checkIfPatientHasPendingVisit,
   createLocalVisit,
   findAllVisits,
   findPendingVisitById,
 } from "../util/dbHelpers.js";
-
+import { nanoid } from "nanoid";
 
 import { AppError } from "../errors/AppError.js";
 
@@ -229,58 +229,41 @@ const findPatientByDemographics = async ({
   });
 };
 
-/**
- * Ensures that creating a new FHIR Patient would not
- * conflict with a locally stored KV number.
- */
-const ensureKvCanBeUsed = async (kv) => {
-  const existingVisit =
-    await checkIfKvNumberExists(kv);
 
-  if (existingVisit) {
-    throw new AppError(
-      409,
-      "No matching Patient was found on FHIR, but the KV number already exists in the local database.",
-    );
-  }
-};
-
-/**
- * Finds an existing FHIR Patient or creates a new one.
- *
- * Search behaviour:
- * - With KV: identifier search plus demographic tie-breaker
- * - Without KV: demographic search
- * - No match: create a new FHIR Patient
- */
-export const findOrCreatePatient = async ({
+export const findPatientByKv = async ({
   kv,
   insuranceType,
-  familyName,
-  givenNames,
-  birthday,
-  address,
-  gender,
 }) => {
-  const givenName = givenNames[0];
-
-  const fhirAddress =
-    createAddress(address);
-
-  let patient;
-
-  if (kv && insuranceType) {
-    patient = await findPatientByIdentifier({
+  const identifier =
+    createIdentifierSearchToken(
       kv,
       insuranceType,
-      familyName,
-      givenName,
-      birthday,
-      address: fhirAddress,
-      gender,
-    });
-  } else {
-    patient =
+    );
+
+  const patients =
+    await fhirGetPatientByIdentifier(
+      identifier,
+    );
+
+  return patients[0];
+};
+
+export const findOrCreatePatientByDemographics =
+  async ({
+    patientInternalIdentifier,
+    familyName,
+    givenNames,
+    birthday,
+    address,
+    gender,
+  }) => {
+
+    const givenName = givenNames[0];
+
+    const fhirAddress =
+      createAddress(address);
+
+    const patient =
       await findPatientByDemographics({
         familyName,
         givenName,
@@ -288,36 +271,37 @@ export const findOrCreatePatient = async ({
         address: fhirAddress,
         gender,
       });
-  }
 
-  if (patient) {
-    return patient;
-  }
+    if (patient) {
+      return patient;
+    }
 
-  await ensureKvCanBeUsed(kv);
+    const newPatient =
+      createFhirPatient({
+        identifier:
+          createInternalIdentifier(
+            patientInternalIdentifier,
+          ),
+        familyName,
+        givenNames,
+        birthday,
+        gender,
+        address: fhirAddress,
+      });
 
-  const newPatient = createFhirPatient({
-    kv,
-    insuranceType,
-    familyName,
-    givenNames,
-    birthday,
-    address: fhirAddress,
-    gender,
-  });
+    const created =
+      await fhirPostPatient(newPatient);
 
-  const createdPatient =
-    await fhirPostPatient(newPatient);
+    if (!created?.id) {
+      throw new AppError(
+        502,
+        "FHIR Patient response did not contain a resource id.",
+      );
+    }
 
-  if (!createdPatient?.id) {
-    throw new AppError(
-      502,
-      "FHIR Patient response did not contain a resource id.",
-    );
-  }
+    return created;
+  };
 
-  return createdPatient;
-};
 // ---------- Anamnesis Functions ----------
 
 export const submitAnamnesis = async ({
@@ -426,50 +410,88 @@ export const submitAnamnesis = async ({
   };
 };
 
-// ---------- Visit Functions ----------
-/**
- * Starts a Visit.
- *
- * The service:
- * 1. Finds or creates the FHIR Patient.
- * 2. Prevents multiple unfinished Visits.
- * 3. Creates the local Visit.
- */
-export const createVisit = async (
-  patientInput,
-) => {
-  const patient =
-    await findOrCreatePatient(patientInput);
-
-  const pendingVisit =
-    await checkIfPatientHasPendingVisit(
-      patient.id,
-    );
-
-  if (pendingVisit) {
-    const error = new AppError(
-      409,
-      "Patient already has a pending Visit.",
-    );
-
-    error.visit = pendingVisit;
-
-    throw error;
-  }
-
-  const visit = await createLocalVisit({
-    kv: patientInput.kv,
-    patientFhirId: patient.id,
-    visitStatus: "started",
-  });
-
-  return {
-    visitId: visit.visitId,
-    visitStatus: visit.visitStatus,
-    patientFhirId: visit.patientFhirId,
+const createVisitForPatient =
+  async ({
     patient,
+    kv,
+    patientInternalIdentifier,
+  }) => {
+
+    const pending =
+      await checkIfPatientHasPendingVisit(
+        patient.id,
+      );
+
+    if (pending) {
+      const error =
+        new AppError(
+          409,
+          "Patient already has a pending Visit.",
+        );
+
+      error.visit = pending;
+
+      throw error;
+    }
+
+    const visit =
+      await createLocalVisit({
+        kv,
+        patientInternalIdentifier,
+        patientFhirId: patient.id,
+        visitStatus:"started",
+      });
+
+    return {
+      visitId: visit.visitId,
+      visitStatus: visit.visitStatus,
+      patientFhirId: visit.patientFhirId,
+      patient,
+    };
   };
-};
+
+export const createVisitFromKv =
+  async ({
+    kv,
+    insuranceType,
+  }) => {
+
+    const patient =
+      await findPatientByKv({
+        kv,
+        insuranceType,
+      });
+
+    if (!patient) {
+      throw new AppError(
+        404,
+        "Patient not found.",
+      );
+    }
+
+    return createVisitForPatient({
+      patient,
+      kv,
+    });
+  };
+
+export const createVisitFromDemographics =
+  async (input) => {
+
+    const patientInternalIdentifier =
+      nanoid();
+
+    const patient =
+      await findOrCreatePatientByDemographics({
+        ...input,
+        patientInternalIdentifier,
+      });
+
+    return createVisitForPatient({
+      patient,
+      patientInternalIdentifier,
+    });
+  };
 
 /**
  * Returns all locally stored Visits.

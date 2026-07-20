@@ -1,5 +1,4 @@
 import {
-  createVisit,
   getAllVisits,
 } from "../services/visitService.js";
 
@@ -8,29 +7,60 @@ import {
 } from "../services/visitService.js";
 
 import {
-  validateCreateVisitInput,
+  validateCreateVisitDemographicsInput,
+  validateCreateVisitKVInput,
   validateSubmitAnamnesisInput,
 } from "../util/validators.js";
 
 import {
   sendErrorResponse,
 } from "../util/errorHelpers.js";
+import { createVisitFromDemographics, createVisitFromKv } from "../services/VisitService.js";
 
 /**
- * Starts a Visit.
+ * Starts a Visit by searching a patient via insurance number (kv).
+ *
+ * The Patient is first searched on the FHIR server.
+ * The resulting FHIR Patient id is stored in the local Visit.
+ */
+export const createVisitKVHandler = async (
+  req,
+  res,
+) => {
+  try {
+    validateCreateVisitKVInput(req.body);
+
+    const result = await createVisitFromKv(
+      req.body,
+    );
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error(error);
+
+    return sendErrorResponse(
+      res,
+      error,
+      "Visit creation failed.",
+    );
+  }
+};
+
+/**
+ * Starts a Visit by searching a patient via insurance number (kv).
  *
  * The Patient is first searched on the FHIR server.
  * If no matching Patient exists, a new Patient is created.
  * The resulting FHIR Patient id is stored in the local Visit.
  */
-export const createVisitHandler = async (
+export const createVisitDemographicsHandler = async (
   req,
   res,
 ) => {
   try {
-    validateCreateVisitInput(req.body);
+    validateCreateVisitDemographicsInput(req.body);
 
-    const result = await createVisit(
+    const result = await createVisitFromDemographics(
       req.body,
     );
 

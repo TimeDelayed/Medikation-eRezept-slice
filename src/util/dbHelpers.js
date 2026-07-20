@@ -62,22 +62,6 @@ export const findPendingVisitById = async (visitId) => {
 };
 
 /**
- * Returns a Visit containing the supplied KV number.
- *
- * Returns:
- * - Visit document if found
- * - null if the KV number is not stored locally
- */
-export const checkIfKvNumberExists = async (kv) => {
-  const kvHash = hashHelperKV(kv);
-
-  return executeDatabaseOperation(
-    () => Visit.findOne({ kvHash }),
-    "Database failed while checking the KV number.",
-  );
-};
-
-/**
  * Creates a local Visit.
  */
 export const createLocalVisit = async ({

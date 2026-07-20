@@ -162,7 +162,7 @@ const addressMatches = (patientAddress, address) => {
     return false;
   }
 
-  // Swagger / Query: address=Musterstraße 1, 12345 Berlin
+  // in case address query is just a text and not object: address=Musterstraße 1, 12345 Berlin
   if (typeof address === "string") {
     return (
       patientAddress.text === address ||

@@ -9,6 +9,8 @@ import {
   CONSENT_DECISION_DENY,
   FHIR_NAMESPACE,
   USERS_NAMESPACE,
+  IDENTIFIER_TYPE_SYSTEM,
+  IDENTIFIER_INTERNAL_SYSTEM,
 } from "../constants/fhirConstants.js";
 
 import {
@@ -41,8 +43,7 @@ import {
  * https://hl7.org/fhir/R4/patient.html
  */
 export const createFhirPatient = ({
-  kv,
-  insuranceType,
+  identifier,
   familyName,
   givenNames,
   gender,
@@ -54,10 +55,10 @@ export const createFhirPatient = ({
   contact,
 }) => {
   const patient = {
-    resourceType: "Patient",
-    identifier: [
-      createFhirIdentifier(kv, insuranceType),
-    ],
+    resourceType:"Patient",
+    identifier: Array.isArray(identifier)
+      ? identifier
+      : [identifier],
     name: [
       {
         use: "official",
@@ -93,6 +94,24 @@ export const createFhirPatient = ({
 
   return patient;
 };
+
+export const createInternalIdentifier = (
+  value,
+) => ({
+  type: {
+    coding: [
+      {
+        system: IDENTIFIER_TYPE_SYSTEM,
+        code: "PI",
+        display:
+          "Practice internal identifier",
+      },
+    ],
+  },
+  system:
+    IDENTIFIER_INTERNAL_SYSTEM,
+  value,
+});
 
 /**
  * Creates a minimal FHIR Consent for sharing
