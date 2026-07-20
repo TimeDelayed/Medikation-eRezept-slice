@@ -247,6 +247,28 @@ export const createFhirMedicationStatement = ({
 });
 
 /**
+ * Creates Fhir MedicationRequest
+ */
+// just as the medicationStatement
+export const createFhirMedicationRequest = ({
+  patientId,
+  status = "active",
+  intent = "order",
+  code,
+  display,
+}) => ({
+  resourceType: "MedicationRequest",
+  status,
+  intent,
+  medicationCodeableConcept: createFhirCodeableConcept(
+    code,
+    "medication",
+    display,
+  ),
+  subject: createPatientRef(patientId),
+});
+
+/**
  * Creates a generic FHIR transaction Bundle.
  *
  * A Provenance resource targeting every submitted resource

@@ -1,11 +1,6 @@
 import {
-  getAllVisits,
+  getAllVisits, submitAnamnesis,createVisitFromDemographics, createVisitFromKv,
 } from "../services/visitService.js";
-
-import {
-  submitAnamnesis,
-} from "../services/visitService.js";
-
 import {
   validateCreateVisitDemographicsInput,
   validateCreateVisitKVInput,
@@ -15,7 +10,11 @@ import {
 import {
   sendErrorResponse,
 } from "../util/errorHelpers.js";
-import { createVisitFromDemographics, createVisitFromKv } from "../services/VisitService.js";
+import { findVisitById } from "../util/dbHelpers.js";
+import { createFhirMedicationRequest, createFhirTransactionBundle } from "../util/mapper.js";
+import { fhirPostTransactionBundle } from "../fhirClient/fhir-client.js";
+import { AppError } from "../errors/AppError.js";
+
 
 /**
  * Starts a Visit by searching a patient via insurance number (kv).
@@ -139,6 +138,49 @@ export const submitAnamnesisHandler = async (
       res,
       error,
       "Anamnesis submission failed.",
+    );
+  }
+};
+
+export const createMedicationRequestBundleHandler = async (
+  req,
+  res,
+) => {
+  const visitId = req.params.visitId;
+
+  try {
+    const { code, display } = req.body;
+
+    const currentVisit = await findVisitById(visitId);
+
+    if (!currentVisit) {
+      throw new AppError(
+        404,
+        `No Visit with ${visitId} found.`,
+      );
+    }
+
+    const newMedicationRequest = createFhirMedicationRequest({
+      patientId: currentVisit.patientFhirId,
+      code,
+      display,
+    });
+
+    const bundle = createFhirTransactionBundle(
+      [newMedicationRequest],
+      req.user,
+    );
+
+    const result = await fhirPostTransactionBundle(bundle);
+
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error(error);
+
+    return sendErrorResponse(
+      res,
+      error,
+      "creation of Prescription failed.",
     );
   }
 };
