@@ -15,12 +15,10 @@ const visitSchema = new Schema({
   kvHash: {
     type: String,
     required: false,
-    unique: true,
   },
   patientInternalIdentifier: {
     type: String,
     required: false,
-    unique: true,
   },
   patientFhirId: {
     type: String,

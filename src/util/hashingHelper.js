@@ -3,12 +3,12 @@ import { readFileSync } from "node:fs";
 
 const pepper = readFileSync("./kv.hash");
 
-export const hashHelperKV = (value) => {
+export const hashHelperIdentifier = (value) => {
 
-  const normalizedKV = value.trim().toUpperCase();
+  const normalizedIdentifier = value.trim().toUpperCase();
 
   return createHmac("sha256", pepper)
-    .update(normalizedKV)
+    .update(normalizedIdentifier)
     .digest("hex");
 
 };

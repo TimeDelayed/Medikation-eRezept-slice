@@ -2,7 +2,7 @@
 import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED, VISIT_STARTED_STATUS } from "../constants/fhirConstants.js";
 import Visit from "../db/schema/visit.schema.js";
 import { AppError } from "../errors/AppError.js";
-import { hashHelperKV as hashHelperKV } from "./hashingHelper.js";
+import { hashHelperIdentifier as hashHelperIdentifier } from "./hashingHelper.js";
 
 /**
  * Executes a database operation and converts database errors
@@ -66,17 +66,26 @@ export const findPendingVisitById = async (visitId) => {
  */
 export const createLocalVisit = async ({
   kv,
+  patientInternalIdentifier,
   patientFhirId,
   visitStatus = "started",
 }) => {
-  const kvHash = hashHelperKV(kv);
+  const visitObject = {
+    patientFhirId,
+    visitStatus,
+  };
+
+  if (kv) {
+    visitObject.kvHash = hashHelperIdentifier(kv);
+  }
+
+  if (patientInternalIdentifier) {
+    visitObject.patientInternalIdentifier =
+      hashHelperIdentifier(patientInternalIdentifier);
+  }
+
   return executeDatabaseOperation(
-    () =>
-      Visit.create({
-        kvHash,
-        patientFhirId,
-        visitStatus,
-      }),
+    () => Visit.create(visitObject),
     "Database failed while creating the Visit.",
   );
 };

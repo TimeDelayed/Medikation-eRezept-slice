@@ -59,7 +59,6 @@ export const fhirGetPatientsByDemographics = async ({
   familyName,
   givenName,
   birthday,
-  address,
   gender,
 }) => {
   const params = {};
@@ -72,9 +71,6 @@ export const fhirGetPatientsByDemographics = async ({
   }
   if (birthday) {
     params.birthdate = birthday;
-  }
-  if (address) {
-    params.address = address;
   }
   if (gender) {
     params.gender = gender;

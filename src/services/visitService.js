@@ -31,9 +31,10 @@ import {
   findAllVisits,
   findPendingVisitById,
 } from "../util/dbHelpers.js";
-import { nanoid } from "nanoid";
+
 
 import { AppError } from "../errors/AppError.js";
+import { nanoid } from "nanoid";
 
 const resolveAnamnesisTransaction = ({
   patientId,
@@ -215,7 +216,6 @@ const findPatientByDemographics = async ({
       familyName,
       givenName,
       birthday,
-      address,
       gender,
     });
 
@@ -480,7 +480,6 @@ export const createVisitFromDemographics =
 
     const patientInternalIdentifier =
       nanoid();
-
     const patient =
       await findOrCreatePatientByDemographics({
         ...input,
