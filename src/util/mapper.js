@@ -11,6 +11,8 @@ import {
   USERS_NAMESPACE,
   IDENTIFIER_TYPE_SYSTEM,
   IDENTIFIER_INTERNAL_SYSTEM,
+  MEDICATION_CONSENT_CATEGORY,
+  MEDICATION_CONSENT_DISPLAY,
 } from "../constants/fhirConstants.js";
 
 import {
@@ -113,22 +115,11 @@ export const createInternalIdentifier = (
   value,
 });
 
-/**
- * Creates a minimal FHIR Consent for sharing
- * anamnesis data via FHIR.
- *
- * Required:
- * - patientId
- * - decision: "permit" | "deny"
- *
- * Every newly created Consent represents the currently
- * applicable decision and therefore has status "active".
- *
- * https://hl7.org/fhir/R4/consent.html
- */
-export const createFhirAnamnesisConsent = ({
+export const createFhirConsent = ({
   patientId,
   decision,
+  categoryCode,
+  categoryDisplay,
 }) => {
   if (!VALID_CONSENT_DECISIONS.includes(decision)) {
     throw new Error(
@@ -149,9 +140,9 @@ export const createFhirAnamnesisConsent = ({
     },
     category: [
       createFhirCodeableConcept(
-        ANAMNESIS_CONSENT_CATEGORY,
+        categoryCode,
         CONSENT_CODESYSTEM_NAME,
-        ANAMNESIS_CONSENT_DISPLAY,
+        categoryDisplay,
       ),
     ],
     patient: createPatientRef(patientId),
@@ -161,6 +152,42 @@ export const createFhirAnamnesisConsent = ({
     },
   };
 };
+
+/**
+ * Creates a minimal FHIR Consent for sharing
+ * data via FHIR.
+ *
+ * Required:
+ * - patientId
+ * - decision: "permit" | "deny"
+ *
+ * Every newly created Consent represents the currently
+ * applicable decision and therefore has status "active".
+ *
+ * https://hl7.org/fhir/R4/consent.html
+ */
+export const createFhirAnamnesisConsent = ({
+  patientId,
+  decision,
+}) => {
+  return createFhirConsent({
+    patientId,
+    decision,
+    categoryCode: ANAMNESIS_CONSENT_CATEGORY,
+    categoryDisplay: ANAMNESIS_CONSENT_DISPLAY,
+  });
+};
+
+export const createFhirMedicationConsent = ({
+  patientId,
+  decision,
+}) =>
+  createFhirConsent({
+    patientId,
+    decision,
+    categoryCode: MEDICATION_CONSENT_CATEGORY,
+    categoryDisplay: MEDICATION_CONSENT_DISPLAY,
+  });
 
 /**
  * Creates FHIR Condition resources for a patient.
@@ -366,6 +393,23 @@ export const createDeniedAnamnesisConsentBundle = ({
   });
 };
 
+export const createDeniedMedicationConsentBundle = ({
+  patientId,
+  currentConsent,
+  user,
+}) => {
+  const deniedConsent =
+    createFhirMedicationConsent({
+      patientId,
+      decision: CONSENT_DECISION_DENY,
+    });
+  return createConsentReplacementBundle({
+    currentConsent,
+    newConsent: deniedConsent,
+    user,
+  });
+};
+
 /**
  * Creates the FHIR transaction for a permitted anamnesis.
  *
@@ -392,6 +436,27 @@ export const createPermittedAnamnesisBundle = ({
     resources: [
       ...conditions,
       ...medicationStatements,
+    ],
+    user,
+  });
+};
+
+export const createPermittedMedicationRequestBundle = ({
+  patientId,
+  currentConsent,
+  medicationRequests = [],
+  user,
+}) => {
+  const permitConsent =
+    createFhirMedicationConsent({
+      patientId,
+      decision: CONSENT_DECISION_PERMIT,
+    });
+  return createConsentReplacementBundle({
+    currentConsent,
+    newConsent: permitConsent,
+    resources: [
+      ...medicationRequests,
     ],
     user,
   });
@@ -489,6 +554,18 @@ export const createAnamnesisDataBundle = ({
     [
       ...conditions,
       ...medicationStatements,
+    ],
+    user,
+  );
+};
+
+export const createMedicationRequestDataBundle = ({
+  medicationRequests = [],
+  user,
+}) => {
+  return createFhirTransactionBundle(
+    [
+      ...medicationRequests,
     ],
     user,
   );

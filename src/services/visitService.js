@@ -1,4 +1,4 @@
-import { CONSENT_DECISION_DENY, CONSENT_DECISION_PERMIT, VISIT_COMPLETED_ANAMNESIS } from "../constants/fhirConstants.js";
+import { CONSENT_DECISION_DENY, CONSENT_DECISION_PERMIT, VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED } from "../constants/fhirConstants.js";
 
 import {
   fhirGetActiveAnamnesisConsents,
@@ -6,6 +6,7 @@ import {
   fhirPostPatient,
   fhirGetPatientByIdentifier,
   fhirGetPatientsByDemographics,
+  fhirGetActiveMedicationConsents,
 } from "../fhirClient/fhir-client.js";
 import { toArray } from "../util/commonHelpers.js";
 import {
@@ -23,12 +24,17 @@ import {
   createFhirMedicationStatements,
   createFhirPatient,
   createInternalIdentifier,
+  createFhirMedicationRequest,
+  createPermittedMedicationRequestBundle,
+  createDeniedMedicationConsentBundle,
+  createMedicationRequestDataBundle,
 } from "../util/mapper.js";
 
 import {
   checkIfPatientHasPendingVisit,
   createLocalVisit,
   findAllVisits,
+  findAnamnesisCompletedVisitById,
   findPendingVisitById,
 } from "../util/dbHelpers.js";
 
@@ -36,44 +42,39 @@ import {
 import { AppError } from "../errors/AppError.js";
 import { nanoid } from "nanoid";
 
-const resolveAnamnesisTransaction = ({
+const resolveConsentTransaction = ({
   patientId,
   requestedDecision,
   currentConsent,
-  conditions,
-  medicationStatements,
+  resources = [],
   user,
-}) => {
-  if (
-    requestedDecision ===
-    CONSENT_DECISION_PERMIT
-  ) {
+  createPermitBundle,
+  createDenyBundle,
+  createDataBundle,
+})=> {
+  if (requestedDecision === CONSENT_DECISION_PERMIT) {
     return {
       decision: CONSENT_DECISION_PERMIT,
-      sendsAnamnesis: true,
-      bundle: createPermittedAnamnesisBundle({
+      sendsData: true,
+      bundle: createPermitBundle({
         patientId,
         currentConsent,
-        conditions,
-        medicationStatements,
+        resources,
         user,
       }),
     };
   }
 
-  if (
-    requestedDecision ===
-    CONSENT_DECISION_DENY
-  ) {
+
+  if (requestedDecision === CONSENT_DECISION_DENY) {
     return {
       decision: CONSENT_DECISION_DENY,
-      sendsAnamnesis: false,
-      bundle:
-        createDeniedAnamnesisConsentBundle({
-          patientId,
-          currentConsent,
-          user,
-        }),
+      sendsData: false,
+      bundle: createDenyBundle({
+        patientId,
+        currentConsent,
+        user,
+      }),
     };
   }
 
@@ -83,10 +84,9 @@ const resolveAnamnesisTransaction = ({
   ) {
     return {
       decision: CONSENT_DECISION_PERMIT,
-      sendsAnamnesis: true,
-      bundle: createAnamnesisDataBundle({
-        conditions,
-        medicationStatements,
+      sendsData: true,
+      bundle: createDataBundle({
+        resources,
         user,
       }),
     };
@@ -98,7 +98,7 @@ const resolveAnamnesisTransaction = ({
   ) {
     return {
       decision: CONSENT_DECISION_DENY,
-      sendsAnamnesis: false,
+      sendsData: false,
       bundle: undefined,
     };
   }
@@ -108,12 +108,11 @@ const resolveAnamnesisTransaction = ({
   // It is tantamount to not signing a consent form, which is equivalent to denying consent.
   return {
     decision: CONSENT_DECISION_DENY,
-    sendsAnamnesis: false,
-    bundle:
-      createDeniedAnamnesisConsentBundle({
-        patientId,
-        user,
-      }),
+    sendsData: false,
+    bundle: createDenyBundle({
+      patientId,
+      user,
+    }),
   };
 };
 
@@ -352,15 +351,19 @@ export const submitAnamnesis = async ({
       medicationInputs,
     );
 
-  const transaction =
-    resolveAnamnesisTransaction({
-      patientId: visit.patientFhirId,
-      requestedDecision,
-      currentConsent,
-      conditions,
-      medicationStatements,
-      user,
-    });
+  const transaction = resolveConsentTransaction({
+    patientId: visit.patientFhirId,
+    requestedDecision,
+    currentConsent,
+    resources: [
+      ...conditions,
+      ...medicationStatements,
+    ],
+    user,
+    createPermitBundle: createPermittedAnamnesisBundle,
+    createDenyBundle: createDeniedAnamnesisConsentBundle,
+    createDataBundle: createAnamnesisDataBundle,
+  });
 
   const transactionResult = transaction.bundle
     ? await fhirPostTransactionBundle(
@@ -391,13 +394,10 @@ export const submitAnamnesis = async ({
       : {}),
   };
 
-  visit.visitStatus = VISIT_COMPLETED_ANAMNESIS;
-
   if (transactionResult?.id) {
     visit.fhirBundleRef = transactionResult.id;
   }
 
-  await visit.save();
 
   return {
     visitId: visit.visitId,
@@ -407,6 +407,112 @@ export const submitAnamnesis = async ({
       transaction.sendsAnamnesis &&
       Boolean(transactionResult),
     anamnesis: visit.anamnesis,
+  };
+};
+
+export const submitMedicationRequest = async ({
+  visitId,
+  medicationRequest,
+  consent,
+  user,
+}) => {
+  const requestedDecision =
+    getConsentDecision(consent);
+
+  const visit = await findAnamnesisCompletedVisitById(visitId);
+
+  if (!visit) {
+    throw new AppError(
+      404,
+      "Visit not found.",
+    );
+  }
+
+  const activeConsents =
+    await fhirGetActiveMedicationConsents(
+      visit.patientFhirId,
+    );
+
+  if (activeConsents.length > 1) {
+    throw new AppError(
+      409,
+      "Multiple active medication Consents exist for this patient.",
+      {
+        consents: activeConsents,
+      },
+    );
+  }
+
+  const currentConsent = activeConsents[0];
+
+  const fhirMedicationRequest =
+    createFhirMedicationRequest({
+      patientId: visit.patientFhirId,
+      ...medicationRequest,
+    });
+
+  const transaction =
+    resolveConsentTransaction({
+      patientId: visit.patientFhirId,
+      requestedDecision,
+      currentConsent,
+      resources: [fhirMedicationRequest],
+      user,
+      createPermitBundle:
+        createPermittedMedicationRequestBundle,
+      createDenyBundle:
+        createDeniedMedicationConsentBundle,
+      createDataBundle:
+        createMedicationRequestDataBundle,
+    });
+
+  const transactionResult = transaction.bundle
+    ? await fhirPostTransactionBundle(
+      transaction.bundle,
+    )
+    : undefined;
+
+  const createdConsentId =
+    getCreatedConsentId(transactionResult);
+
+  visit.prescription = {
+    medicationRequest,
+    consent: {
+      decision: transaction.decision,
+      fhirConsentId:
+        createdConsentId ?? currentConsent?.id,
+      decidedAt:
+        requestedDecision || !currentConsent
+          ? new Date()
+          : currentConsent.dateTime,
+    },
+    ...(transaction.sendsData &&
+    transactionResult
+      ? {
+        sentToFhirAt: new Date(),
+      }
+      : {}),
+  };
+
+
+
+  if (transactionResult?.id) {
+    visit.fhirBundleRef =
+      transactionResult.id;
+  }
+
+
+
+  return {
+    visitId: visit.visitId,
+    visitStatus: visit.visitStatus,
+    consentDecision:
+      transaction.decision,
+    medicationRequestSentToFhir:
+      transaction.sendsData &&
+      Boolean(transactionResult),
+    prescription:
+      visit.prescription,
   };
 };
 

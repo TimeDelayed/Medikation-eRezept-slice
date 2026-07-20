@@ -253,7 +253,7 @@ router.get(
  *                       type: string
  *                       example: Atorvastatin-ratiopharm® 40mg 30 Filmtbl. N1
  *     responses:
- *       200:
+ *       201:
  *         description: Anamnesis successfully processed.
  *       400:
  *         description: Invalid request.
@@ -299,9 +299,10 @@ router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", Resourc
  *       - Medication
  *     summary: Creates a prescription for the patient of a visit.
  *     description: >
- *       Creates a FHIR MedicationRequest for the patient linked to the visit
- *       and sends it to the FHIR server as a transaction bundle.
- *       A Provenance resource documenting the prescribing physician is added automatically.
+ *       Creates a FHIR MedicationRequest for the patient linked to the Visit.
+ *       Depending on the consent decision, a Medication Consent may be created
+ *       or updated. The MedicationRequest and Provenance are then sent to the
+ *       FHIR server as a transaction bundle.
  *     parameters:
  *       - in: path
  *         name: visitId
@@ -316,48 +317,51 @@ router.get("/visits/:visitId/medicationHistory", addAuditOptions("Read", Resourc
  *           schema:
  *             type: object
  *             required:
- *               - code
- *               - display
+ *               - medicationRequest
  *             properties:
- *               code:
- *                 type: string
- *                 description: Medication code.
- *                 example: cfsb1758031032850
- *               display:
- *                 type: string
- *                 description: Human readable medication name.
- *                 example: Atorvastatin-ratiopharm® 40mg 30 Filmtbl. N1
+ *               consent:
+ *                 oneOf:
+ *                   - type: string
+ *                     enum: [permit, deny]
+ *                   - type: object
+ *                     properties:
+ *                       decision:
+ *                         type: string
+ *                         enum: [permit, deny]
+ *                 description: >
+ *                   Optional medication consent decision. If omitted,
+ *                   the currently active Medication Consent is used.
+ *               medicationRequest:
+ *                 type: object
+ *                 required:
+ *                   - code
+ *                   - display
+ *                 properties:
+ *                   code:
+ *                     type: string
+ *                     description: Medication code.
+ *                     example: cfsb1758031032850
+ *                   display:
+ *                     type: string
+ *                     description: Human readable medication name.
+ *                     example: Atorvastatin-ratiopharm® 40mg 30 Filmtbl. N1
  *     responses:
  *       201:
- *         description: Prescription created successfully.
+ *         description: MedicationRequest successfully created.
  *       400:
  *         description: Invalid request.
  *       404:
  *         description: Visit not found.
+ *       409:
+ *         description: Multiple active Medication Consents or invalid Visit state.
  *       502:
  *         description: FHIR server request failed.
  */
-router.post("/visits/:visitId/prescription", addAuditOptions("create", ResourceType.MEDICATION_REQUEST), createMedicationRequestBundleHandler);
-
-/**
- * @openapi
- * /visits/{visitId}/finalize:
- *   post:
- *     tags:
- *       - Visit
- *     summary: Finalizes a visit.
- *     parameters:
- *       - in: path
- *         name: visitId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Visit finalized successfully.
- */
-//router.post("/visits/:visitId/finalize", addAuditOptions("finish Visit", ResourceType.VISIT), finalizeVisitHandler);
-
+router.post(
+  "/visits/:visitId/prescription",
+  addAuditOptions("create", ResourceType.MEDICATION_REQUEST),
+  createMedicationRequestBundleHandler,
+);
 
 
 export default router;

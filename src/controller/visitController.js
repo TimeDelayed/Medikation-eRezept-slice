@@ -4,6 +4,7 @@ import {
 import {
   validateCreateVisitDemographicsInput,
   validateCreateVisitKVInput,
+  validateMedicationRequestInput,
   validateSubmitAnamnesisInput,
 } from "../util/validators.js";
 
@@ -14,6 +15,8 @@ import { findVisitById } from "../util/dbHelpers.js";
 import { createFhirMedicationRequest, createFhirTransactionBundle } from "../util/mapper.js";
 import { fhirPostTransactionBundle } from "../fhirClient/fhir-client.js";
 import { AppError } from "../errors/AppError.js";
+import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED } from "../constants/fhirConstants.js";
+import { submitMedicationRequest } from "../services/VisitService.js";
 
 
 /**
@@ -124,7 +127,10 @@ export const submitAnamnesisHandler = async (
       ...req.body,
     });
 
-    return res.status(200).json(result);
+    const visit = await findVisitById(visitId);
+    visit.visitStatus = VISIT_COMPLETED_ANAMNESIS;
+    await visit.save();
+    return res.status(201).json(result);
   } catch (error) {
     console.error(
       JSON.stringify(
@@ -142,45 +148,39 @@ export const submitAnamnesisHandler = async (
   }
 };
 
-export const createMedicationRequestBundleHandler = async (
-  req,
-  res,
-) => {
-  const visitId = req.params.visitId;
+export const createMedicationRequestBundleHandler =
+  async (req, res) => {
+    const { visitId } = req.params;
 
-  try {
-    const { code, display } = req.body;
+    try {
+      validateMedicationRequestInput({
+        visitId,
+        body: req.body,
+      });
 
-    const currentVisit = await findVisitById(visitId);
+      const result =
+        await submitMedicationRequest({
+          visitId,
+          ...req.body,
+          user: req.user,
+        });
+      const visit = await findVisitById(visitId);
+      visit.visitStatus = VISIT_FINALIZED;
+      await visit.save();
+      return res.status(201).json(result);
+    } catch (error) {
+      console.error(
+        JSON.stringify(
+          error.response?.data,
+          null,
+          2,
+        ),
+      );
 
-    if (!currentVisit) {
-      throw new AppError(
-        404,
-        `No Visit with ${visitId} found.`,
+      return sendErrorResponse(
+        res,
+        error,
+        "Creation of MedicationRequest failed.",
       );
     }
-
-    const newMedicationRequest = createFhirMedicationRequest({
-      patientId: currentVisit.patientFhirId,
-      code,
-      display,
-    });
-
-    const bundle = createFhirTransactionBundle(
-      [newMedicationRequest],
-      req.user,
-    );
-
-    const result = await fhirPostTransactionBundle(bundle);
-
-    return res.status(201).json(result);
-  } catch (error) {
-    console.error(error);
-
-    return sendErrorResponse(
-      res,
-      error,
-      "creation of Prescription failed.",
-    );
-  }
-};
+  };

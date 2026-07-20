@@ -3,11 +3,11 @@
 RESTful backend for the medication/ePrescription project.
 
 ## Wichtig
-Lea Feilberg steht zwar auf Miro als Gruppenmitglied, hat sich aber entschieden nicht an der Gruppe teilzunehmen. 
+Y steht zwar auf Miro als Gruppenmitglied, hat sich aber entschieden nicht an der Gruppe teilzunehmen. 
 Dies wurde im privaten chat abgesprochen.
 
 ### Hinweis zur Gruppenarbeit
-Nikita und Nils haben dieses Repo gemeinsam erarbeitet und an einigen Stellen Co-Working und Pair-Programming betrieben.
+X und Z haben dieses Repo gemeinsam erarbeitet und an einigen Stellen Co-Working und Pair-Programming betrieben.
 Die Leistung verteilt sich somit auf etwa 50 / 50.
 
 ## Anforderungen an das Projekt und unsere Grundlagen

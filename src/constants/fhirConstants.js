@@ -65,6 +65,13 @@ export const VALID_GENDERS = [
   PATIENT_GENDER_UNKNOWN,
 ];
 
+// ---------- Medication Request Consent ----------
+export const MEDICATION_CONSENT_CATEGORY = "medication-request";
+export const MEDICATION_CONSENT_DISPLAY =
+  "Medication request sharing consent";
+export const MEDICATION_CONSENT_CATEGORY_TOKEN =
+  `${CONSENT_CODESYSTEM}|${MEDICATION_CONSENT_CATEGORY}`;
+
 // ---------- Consent status ----------
 
 export const CONSENT_STATUS_ACTIVE = "active";

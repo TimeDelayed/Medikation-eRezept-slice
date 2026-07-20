@@ -3,6 +3,7 @@ import axios from "axios";
 import {
   ANAMNESIS_CONSENT_CATEGORY_TOKEN,
   FHIR_BASE_URL,
+  MEDICATION_CONSENT_CATEGORY_TOKEN,
 } from "../constants/fhirConstants.js";
 
 const getEntries = (bundle) => (bundle.entry ?? []).map((e) => e.resource);
@@ -150,6 +151,29 @@ export const fhirGetActiveAnamnesisConsents =
 
     return getEntries(result.data);
   };
+
+/**
+ * Returns all active anamnesis Consents for a patient.
+ *
+ * Normally, zero or one resource should be returned.
+ * An array is retained so duplicate data can be detected.
+ */
+export const fhirGetActiveMedicationConsents =
+  async (patientId) => {
+    requireValue(patientId, "patientId");
+
+    const result = await fhir.get("/Consent", {
+      params: {
+        patient: patientId,
+        category:
+          MEDICATION_CONSENT_CATEGORY_TOKEN,
+        status: "active",
+      },
+    });
+
+    return getEntries(result.data);
+  };
+
 
 /**
  * Returns all historical and current anamnesis

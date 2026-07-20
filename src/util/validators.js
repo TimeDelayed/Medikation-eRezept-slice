@@ -205,3 +205,47 @@ export const validateSubmitAnamnesisInput = ({
     );
   }
 };
+
+export const validateMedicationRequestInput = ({
+  visitId,
+  body,
+}) => {
+  if (!isNonEmptyString(visitId)) {
+    throw new AppError(
+      400,
+      "Missing required path parameter: visitId.",
+    );
+  }
+  if (!body || typeof body !== "object") {
+    throw new AppError(
+      400,
+      "A JSON request body is required.",
+    );
+  }
+  const { medicationRequest, consent } = body;
+  const consentDecision =
+    typeof consent === "string"
+      ? consent
+      : consent?.decision;
+  if (
+    consentDecision &&
+    !VALID_CONSENT_DECISIONS.includes(
+      consentDecision,
+    )
+  ) {
+    throw new AppError(
+      400,
+      "Consent decision must be \"permit\" or \"deny\".",
+    );
+  }
+  if (
+    medicationRequest !== undefined &&
+        !Array.isArray(medicationRequest) &&
+        typeof medicationRequest !== "object"
+  ) {
+    throw new AppError(
+      400,
+      "medicationRequest must be an object or an array.",
+    );
+  }
+};

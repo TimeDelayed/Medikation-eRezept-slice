@@ -61,6 +61,16 @@ export const findPendingVisitById = async (visitId) => {
   );
 };
 
+export const findAnamnesisCompletedVisitById = async (visitId) => {
+  return executeDatabaseOperation(
+    () => Visit.findOne({
+      visitId,
+      visitStatus: { $in: [VISIT_COMPLETED_ANAMNESIS] },
+    }),
+    "Database failed while loading the Visit.",
+  );
+};
+
 /**
  * Creates a local Visit.
  */
