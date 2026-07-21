@@ -1,12 +1,5 @@
 /**
- * Collects the ids of everything a request touched, so the
- * auditMiddleware can write them once the response is sent.
- * Has to be called before res.json().
- *
- * resourceId / patientRef describe the primary resource of the route.
- * entities lists every resource a transaction Bundle actually created,
- * because one request can touch a Consent, several Conditions and
- * several MedicationStatements at once.
+ * Collects the ids of everything a request touched.
  */
 export const setAuditIdsHelper = (
   req,
