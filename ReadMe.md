@@ -46,8 +46,17 @@ die Patienten-FHIR-ID, da diese unique ist!
 
 Ergänzend haben wir die DSGVO zu den für unser Szenario relevanten Regelungen geprüft. Die lokale Speicherung der im Rahmen der Behandlung erhobenen Daten erfolgt **unabhängig von einer datenschutzrechtlichen Einwilligung**. Rechtsgrundlage hierfür sind insbesondere [**Art. 6 Abs. 1 lit. b DSGVO (Erfüllung des Behandlungsvertrags)**](https://dsgvo-gesetz.de/art-6-dsgvo/) sowie [**Art. 9 Abs. 2 lit. h DSGVO (Verarbeitung von Gesundheitsdaten zum Zweck der medizinischen Versorgung)**](https://dsgvo-gesetz.de/art-9-dsgvo/). Da Gesundheitsdaten einer besonderen Kategorie personenbezogener Daten angehören (Art. 9 DSGVO), haben wir uns im Projekt dafür entschieden, Anamnesedaten ausschließlich nach dokumentierter Einwilligung (Consent) an FHIR zu übertragen
 
-* Bei `permit` wird die Anamnese als **Transaction-Bundle** (Condition + MedicationStatement + Consent + Provenance -> alle referenzieren den Patienten) an FHIR gesendet.
-* Bei `deny` wird **nur** ein Bundle mit Consent-Ressource und Provenance geschrieben – keine medizinischen Daten.
+Bei beiden Transactions werden seperat Consents von uns geführt im folgenden Stil:
+* Bei `permit` wird das **Transaction-Bundle**  an FHIR gesendet und überschreibt einen anderen activen Consent, da dieser aktueller ist.
+* Bei `deny` wird **nur** ein Bundle mit Consent-Ressource und Provenance geschrieben und an FHIR gesendet – keine medizinischen Daten.
+Bei jeweils keiner Angabe wird nach vorhandenen aktiven Consents auf FHIR gesucht:
+* Consent `permit` wie oben. Der Consent wird hier nicht nochmal seperat gesendet.
+* Consent `deny` wie oben. Der Consent wird hier nicht nochmal seperat gesendet.
+* Kein vorhanderer Consent -> Consent wurde nie gegeben, wird also als `deny` interpretiert und
+an FHIR gesendet.
+
+Dabei ist eins unserer Transaction das Anamnese-Bundle ( Condition (Vorerkrankungen) + MedicationStatement (Dauermedikamente) + Consent (DSGVO) + Provenance -> Alle referenzieren den Patienten über seine FHIR-ID),
+und das Medication-Request-Bundle (Consent (DSGVO) + MedicationRequest + Provenance -> Alle referenzieren den Patienten über seine FHIR-ID).
 
 ### 4. Gesetzliche Aufbewahrungsfrist
 
@@ -63,7 +72,35 @@ Jede API-Operation wird protokolliert (Akteur inkl. Rollen, Aktion, Ressourcenty
 Das setzt den Gedanken der FHIR-`Provenance`/`AuditEvent`-Ressourcen ("wo kommen die Daten her, wer hat was getan?") auf Anwendungsebene um.
 Wir haben uns an dieser Stelle dagegen entschieden die FHIR Audits zu verwenden, da wir lieber ein internes Audit haben wollten und das FHIR Audit keine Pflicht darstellt. 
 
-### 6. Pseudonymisierung der KV-Nummer
+### 6. Grenzen des Audits
+
+Wir loggen ganze Vorgänge und nicht jede einzelne FHIR-Abfrage.
+Uns interessiert: wann haben wir für welchen Patienten eine Anamnese gemacht
+oder eine Medikation verordnet, wer war das, und hat es geklappt.
+Jeder FHIR-Request einzeln im Log hätte den Trail nur vollgemüllt und uns
+für diese Frage nichts gebracht. Alles, was zu einem Vorgang gehört, hängt
+über die `transactionId` zusammen. (In unserem Fall ist aber jede Transaktion
+einzeln machbar, weshalb diese IDs immer unterschiedlich sind.)
+
+Limitationen des bestehenden Systems:
+
+Sollte das Schreiben des Audits fehlschlagen, lassen wir den Request trotzdem
+weiterlaufen. Das haben wir bewusst so gewählt, um Serviceausfälle in vollen
+Praxen zu vermeiden.
+
+In der Realität würde man an dieser Stelle z. B. eine RabbitMQ-Queue
+dazwischenwerfen, damit die Audit-DB "egal" wird (Fire and Forget).
+
+Wir haben die Audit-DB gegen Änderungen aus dem Code abgesichert.
+Natürlich würde man in der Praxis die Datenbank zusätzlich von außen über
+Schreibrechte absichern. In unserem Fall wäre das aber Overkill.
+
+### 7. Pseudonymisierung der KV-Nummer und Patient-Internal-Identifier
+
+Vorab, wir haben uns an dem Grundsatz entlangehangelt das ein Patient im Notfall (oder 
+durch Umstände) keine KV-Nummer zum gegebenen Zeitpunkt des Besuchs hat. Daher muss er 
+vorerst im System und auf FHIR mit einer Übergangs-ID des Systems hinterlegt werden, um später die 
+Möglichkeit zu haben, seine Krankenversicherung Nachzureichen.
 
 Bei Grundsatz 1 ist uns aufgefallen, dass wir uns an einer Stelle selbst widersprechen: Die KV-Nummer stand bei uns im Klartext in der Datenbank, obwohl sie ein direkt identifizierendes Merkmal ist.
 
