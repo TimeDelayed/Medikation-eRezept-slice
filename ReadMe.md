@@ -69,6 +69,29 @@ Gespeichert wird deshalb nur noch `kvHash`. Gehasht wird erst direkt vor dem Sch
 Wir benutzen **HMAC-SHA256**. Dabei fließt zusätzlich ein geheimer Schlüssel in den Hash ein, der sogenannte Pepper (`kv.hash`).
 Der liegt als Datei beim Code und nicht in der Datenbank. Ohne ihn kann man die Hashes gar nicht erst nachbauen, das Durchprobieren bringt also nichts mehr.
 
+### 7. Grenzen des Audits
+
+Wir loggen ganze Vorgänge und nicht jede einzelne FHIR-Abfrage.
+Uns interessiert: wann haben wir für welchen Patienten eine Anamnese gemacht
+oder eine Medikation verordnet, wer war das, und hat es geklappt.
+Jeder FHIR-Request einzeln im Log hätte den Trail nur vollgemüllt und uns
+für diese Frage nichts gebracht. Alles, was zu einem Vorgang gehört, hängt
+über die `transactionId` zusammen. (In unserem Fall ist aber jede Transaktion
+einzeln machbar, weshalb diese IDs immer unterschiedlich sind.)
+
+Limitationen des bestehenden Systems:
+
+Sollte das Schreiben des Audits fehlschlagen, lassen wir den Request trotzdem
+weiterlaufen. Das haben wir bewusst so gewählt, um Serviceausfälle in vollen
+Praxen zu vermeiden.
+
+In der Realität würde man an dieser Stelle z. B. eine RabbitMQ-Queue
+dazwischenwerfen, damit die Audit-DB "egal" wird (Fire and Forget).
+
+Wir haben die Audit-DB gegen Änderungen aus dem Code abgesichert.
+Natürlich würde man in der Praxis die Datenbank zusätzlich von außen über
+Schreibrechte absichern. In unserem Fall wäre das aber Overkill.
+
 ### Ableitung der Architektur
 
 Bereits früh im Projekt haben wir ein erstes UML für den Ablauf in der Arztpraxis vorbereitet, das für uns logisch erschien und an dem wir uns über die gesamte Projektlaufzeit orientiert haben:
