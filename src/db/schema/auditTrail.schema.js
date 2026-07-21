@@ -32,6 +32,22 @@ const auditTrail = new Schema({
   patientRef: {
     type: String,
   },
+  visitId: {
+    type: String,
+  },
+  // update Audittrail to contain entitys id if they are created.
+  entities: [
+    {
+      _id: false,
+      ressourceType: {
+        type: String,
+        enum: Object.values(ResourceType),
+      },
+      resourceId: {
+        type: String,
+      },
+    },
+  ],
   url: {
     type: String,
     required: true,
@@ -44,10 +60,13 @@ const auditTrail = new Schema({
     type: Number,
     required: true,
   },
+  error: {
+    type: String,
+  },
   createdAt: {
     type: Date,
     required: true,
-    default: Date.now(),
+    default: Date.now,
   },
 });
 

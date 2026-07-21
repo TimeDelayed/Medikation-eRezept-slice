@@ -281,10 +281,23 @@ export const getConsentDecision = (consent) => {
   return consent?.decision;
 };
 
-export const getCreatedConsentId = (transactionResult) => {
-  const location = transactionResult?.entry?.find((entry) =>
-    entry.response?.location?.startsWith("Consent/"),
-  )?.response?.location;
+// extract ressourceType and ressourceId, so we can put it in the audit later
+// https://hl7.org/fhir/R4/bundle.html
+// rentry 0..*
+// response 0..1 : { status, location }
+// filter if there and then use
+// https://hl7.org/fhir/R4/datatypes.html#uri
+export const getCreatedEntities = (transactionResult) =>
+  (transactionResult?.entry ?? [])
+    .map((entry) => entry.response?.location)
+    .filter(Boolean)
+    .map((location) => {
+      const [ressourceType, resourceId] = location.split("/");
 
-  return location?.split("/")[1];
-};
+      return { ressourceType, resourceId };
+    });
+
+export const getCreatedConsentId = (transactionResult) =>
+  getCreatedEntities(transactionResult).find(
+    (entity) => entity.ressourceType === "Consent",
+  )?.resourceId;

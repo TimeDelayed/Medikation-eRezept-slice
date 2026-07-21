@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import jwt from "jsonwebtoken";
+import { setAuditIdsHelper } from "../audit/auditHelper.js";
 
 const publicKey = readFileSync("./public.key");
 const privateKey = readFileSync("./private.key");
@@ -27,6 +28,10 @@ export const securityMiddleware = async (req, res, next) => {
 // https://medium.com/@almog_y/creating-and-reading-jwt-tokens-in-node-js-dd2202363327
 export const handleDummyLogin = (req, res) => {
   const { username, password } = req.body;
+
+  // also set for failed attempts, so the audit shows which account
+  // someone tried to log in as
+  setAuditIdsHelper(req, { resourceId: username });
 
   if (username !== "admin" || password !== "admin") {
     return res.status(401).json({ error: "Invalid credentials" });

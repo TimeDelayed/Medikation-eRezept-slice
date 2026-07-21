@@ -17,6 +17,7 @@ import { toArray } from "../util/commonHelpers.js";
 import {
   getConsentDecision,
   getCreatedConsentId,
+  getCreatedEntities,
   createGermanFhirAddress,
   createIdentifierSearchToken,
   patientsTieBreaker } from "../util/fhirHelpers.js";
@@ -422,6 +423,12 @@ export const submitAnamnesis = async ({
       transaction.sendsData &&
       Boolean(transactionResult),
     anamnesis: visit.anamnesis,
+    // only the service sees the transaction response, so the ids of
+    // the created resources are handed out here for the audit trail
+    fhirBundleRef: visit.fhirBundleRef,
+    createdEntities: getCreatedEntities(
+      transactionResult,
+    ),
   };
 };
 
@@ -531,6 +538,10 @@ export const submitMedicationRequest = async ({
       transaction.sendsData &&
       Boolean(transactionResult),
     prescription: visit.prescription,
+    fhirBundleRef: visit.fhirBundleRef,
+    createdEntities: getCreatedEntities(
+      transactionResult,
+    ),
   };
 };
 

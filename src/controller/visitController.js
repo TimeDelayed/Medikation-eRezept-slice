@@ -1,5 +1,9 @@
 import {
-  getAllVisits, submitAnamnesis,createVisitFromDemographics, createVisitFromKv,
+  getAllVisits,
+  submitAnamnesis,
+  submitMedicationRequest,
+  createVisitFromDemographics,
+  createVisitFromKv,
 } from "../services/visitService.js";
 import {
   validateCreateVisitDemographicsInput,
@@ -12,8 +16,8 @@ import {
   sendErrorResponse,
 } from "../util/errorHelpers.js";
 import { findVisitById } from "../util/dbHelpers.js";
+import { setAuditIdsHelper } from "../audit/auditHelper.js";
 import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED } from "../constants/fhirConstants.js";
-import { submitMedicationRequest } from "../services/VisitService.js";
 
 
 /**
@@ -32,6 +36,11 @@ export const createVisitKVHandler = async (
     const result = await createVisitFromKv(
       req.body,
     );
+
+    setAuditIdsHelper(req, {
+      resourceId: result.visitId,
+      patientRef: result.patientFhirId,
+    });
 
     return res.status(201).json(result);
   } catch (error) {
@@ -62,6 +71,11 @@ export const createVisitDemographicsHandler = async (
     const result = await createVisitFromDemographics(
       req.body,
     );
+
+    setAuditIdsHelper(req, {
+      resourceId: result.visitId,
+      patientRef: result.patientFhirId,
+    });
 
     return res.status(201).json(result);
   } catch (error) {
@@ -118,6 +132,13 @@ export const submitAnamnesisHandler = async (
       body: req.body,
     });
 
+    // we already set the patientID here for the Audit
+    // if the request failes we already have the patient Fhir Id
+    setAuditIdsHelper(req, {
+      patientRef: (await findVisitById(visitId))
+        ?.patientFhirId,
+    });
+
     const result = await submitAnamnesis({
       visitId,
       user: req.user,
@@ -127,6 +148,12 @@ export const submitAnamnesisHandler = async (
     const visit = await findVisitById(visitId);
     visit.visitStatus = VISIT_COMPLETED_ANAMNESIS;
     await visit.save();
+
+    setAuditIdsHelper(req, {
+      resourceId: result.fhirBundleRef,
+      entities: result.createdEntities,
+    });
+
     return res.status(201).json(result);
   } catch (error) {
     console.error(
@@ -155,6 +182,12 @@ export const createMedicationRequestBundleHandler =
         body: req.body,
       });
 
+      // set early, so failed requests are audited with the patient too
+      setAuditIdsHelper(req, {
+        patientRef: (await findVisitById(visitId))
+          ?.patientFhirId,
+      });
+
       const result =
         await submitMedicationRequest({
           visitId,
@@ -164,6 +197,12 @@ export const createMedicationRequestBundleHandler =
       const visit = await findVisitById(visitId);
       visit.visitStatus = VISIT_FINALIZED;
       await visit.save();
+
+      setAuditIdsHelper(req, {
+        resourceId: result.fhirBundleRef,
+        entities: result.createdEntities,
+      });
+
       return res.status(201).json(result);
     } catch (error) {
       console.error(
