@@ -169,41 +169,6 @@ const selectMatchingPatient = ({
   );
 };
 
-/**
- * Searches for a Patient using the insurance identifier.
- *
- * Demographic information is used as a tie-breaker because
- * the public FHIR test server does not enforce unique KV numbers.
- */
-const findPatientByIdentifier = async ({
-  kv,
-  insuranceType,
-  familyName,
-  givenName,
-  birthday,
-  address,
-  gender,
-}) => {
-  const identifier =
-    createIdentifierSearchToken(
-      kv,
-      insuranceType,
-    );
-
-  const patients =
-    await fhirGetPatientByIdentifier(
-      identifier,
-    );
-
-  return selectMatchingPatient({
-    patients,
-    familyName,
-    givenName,
-    birthday,
-    address,
-    gender,
-  });
-};
 
 /**
  * Searches for a Patient using demographic data.

@@ -2,6 +2,7 @@ import {
   VISIT_COMPLETED_ANAMNESIS,
   VISIT_STARTED_STATUS,
   OPERATION_OUTCOME_ISSUE_CODE,
+  VISIT_FINALIZED,
 } from "../constants/fhirConstants.js";
 import Visit from "../db/schema/visit.schema.js";
 import { AppError } from "../errors/AppError.js";
@@ -40,7 +41,7 @@ export const checkIfPatientHasPendingVisit = async (
       Visit.findOne({
         patientFhirId,
         visitStatus: {
-          $ne: "done",
+          $ne: VISIT_FINALIZED,
         },
       }),
     "Database failed while checking for a pending Visit.",
@@ -90,7 +91,7 @@ export const createLocalVisit = async ({
   kv,
   patientInternalIdentifier,
   patientFhirId,
-  visitStatus = "started",
+  visitStatus = VISIT_STARTED_STATUS,
 }) => {
   const visitObject = {
     patientFhirId,
