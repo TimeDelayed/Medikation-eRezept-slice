@@ -1,5 +1,5 @@
 import { AppError } from "../errors/AppError.js";
-import { VALID_INSURANCE_TYPES, VALID_GENDERS, VALID_CONSENT_DECISIONS } from "../constants/fhirConstants.js";
+import { VALID_INSURANCE_TYPES, VALID_GENDERS, VALID_CONSENT_DECISIONS, OPERATION_OUTCOME_ISSUE_CODE } from "../constants/fhirConstants.js";
 
 const isNonEmptyString = (value) => {
   return (
@@ -36,6 +36,9 @@ export const validateCreateVisitDemographicsInput = (body) => {
     throw new AppError(
       400,
       "A JSON request body is required.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+      },
     );
   }
 
@@ -79,6 +82,9 @@ export const validateCreateVisitDemographicsInput = (body) => {
     throw new AppError(
       400,
       `Missing or invalid required fields: ${missingFields.join(", ")}.`,
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+      },
     );
   }
 
@@ -86,6 +92,9 @@ export const validateCreateVisitDemographicsInput = (body) => {
     throw new AppError(
       400,
       "gender must be male, female, other or unknown.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
 
@@ -93,6 +102,9 @@ export const validateCreateVisitDemographicsInput = (body) => {
     throw new AppError(
       400,
       "birthday must use the FHIR date format YYYY-MM-DD.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
 
@@ -100,6 +112,9 @@ export const validateCreateVisitDemographicsInput = (body) => {
     throw new AppError(
       400,
       "address must either be a non-empty string or an object containing text.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
 };
@@ -112,20 +127,37 @@ export const validateCreateVisitKVInput = (body) => {
     throw new AppError(
       400,
       "A JSON request body is required.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+      },
     );
   }
+
   const {
     kv,
     insuranceType,
   } = body;
+
   const missingFields = [];
 
   if (!isNonEmptyString(kv)) {
     missingFields.push("kv");
   }
+
   if (!insuranceType) {
     missingFields.push("insuranceType");
   }
+
+  if (missingFields.length > 0) {
+    throw new AppError(
+      400,
+      `Missing or invalid required fields: ${missingFields.join(", ")}.`,
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+      },
+    );
+  }
+
   if (
     !VALID_INSURANCE_TYPES.includes(
       insuranceType,
@@ -134,9 +166,11 @@ export const validateCreateVisitKVInput = (body) => {
     throw new AppError(
       400,
       "insuranceType must be GKV or PKV.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
-
 };
 
 /**
@@ -150,6 +184,9 @@ export const validateSubmitAnamnesisInput = ({
     throw new AppError(
       400,
       "Missing required path parameter: visitId.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+      },
     );
   }
 
@@ -157,6 +194,9 @@ export const validateSubmitAnamnesisInput = ({
     throw new AppError(
       400,
       "A JSON request body is required.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+      },
     );
   }
 
@@ -180,6 +220,9 @@ export const validateSubmitAnamnesisInput = ({
     throw new AppError(
       400,
       "Consent decision must be \"permit\" or \"deny\".",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
 
@@ -191,6 +234,9 @@ export const validateSubmitAnamnesisInput = ({
     throw new AppError(
       400,
       "condition must be an object or an array.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
 
@@ -202,6 +248,9 @@ export const validateSubmitAnamnesisInput = ({
     throw new AppError(
       400,
       "medicationStatement must be an object or an array.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
 };
@@ -214,19 +263,29 @@ export const validateMedicationRequestInput = ({
     throw new AppError(
       400,
       "Missing required path parameter: visitId.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+      },
     );
   }
+
   if (!body || typeof body !== "object") {
     throw new AppError(
       400,
       "A JSON request body is required.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+      },
     );
   }
+
   const { medicationRequest, consent } = body;
+
   const consentDecision =
     typeof consent === "string"
       ? consent
       : consent?.decision;
+
   if (
     consentDecision &&
     !VALID_CONSENT_DECISIONS.includes(
@@ -236,16 +295,23 @@ export const validateMedicationRequestInput = ({
     throw new AppError(
       400,
       "Consent decision must be \"permit\" or \"deny\".",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
+
   if (
     medicationRequest !== undefined &&
-        !Array.isArray(medicationRequest) &&
-        typeof medicationRequest !== "object"
+    !Array.isArray(medicationRequest) &&
+    typeof medicationRequest !== "object"
   ) {
     throw new AppError(
       400,
       "medicationRequest must be an object or an array.",
+      {
+        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+      },
     );
   }
 };

@@ -1,3 +1,5 @@
+import { OPERATION_OUTCOME_ISSUE_CODE } from "../constants/fhirConstants.js";
+
 /**
  * Extracts diagnostics from a FHIR OperationOutcome.
  */
@@ -18,25 +20,25 @@ export const sendErrorResponse = (
   error,
   fallbackMessage = "Request failed.",
 ) => {
-  const statusCode =
-    error.statusCode ??
-    error.response?.status ??
-    500;
+  const statusCode = error.statusCode ?? error.response?.status ?? 500;
 
   const fhirErrors = getFhirErrors(error);
 
+  const diagnostics = fhirErrors?.length > 0 ? fhirErrors : [
+    error.cause?.message ??
+    error.message ??
+    fallbackMessage,
+  ];
+
   return res.status(statusCode).json({
-    status: "error",
-    message:
-      error.message || fallbackMessage,
-    error:
-      fhirErrors?.length > 0
-        ? fhirErrors
-        : [
-          error.cause?.message ??
-              error.message ??
-              fallbackMessage,
-        ],
+    resourceType: "OperationOutcome",
+    issue: diagnostics.map((diagnostic) => ({
+      severity: "error",
+      code:
+        error.issueCode ??
+        OPERATION_OUTCOME_ISSUE_CODE.PROCESSING,
+      diagnostics: diagnostic,
+    })),
     ...(error.consents
       ? { consents: error.consents }
       : {}),

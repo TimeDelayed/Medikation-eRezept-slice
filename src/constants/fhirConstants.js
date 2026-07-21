@@ -97,3 +97,26 @@ export const VISIT_STATUSES = [
   VISIT_COMPLETED_ANAMNESIS,
   VISIT_FINALIZED,
 ];
+
+// ---------- Issue Codes ----------
+// Issue Codes: https://build.fhir.org/valueset-issue-type.html
+export const OPERATION_OUTCOME_ISSUE_CODE = Object.freeze({
+  INVALID: "invalid",
+  STRUCTURE: "structure",
+  REQUIRED: "required",
+  VALUE: "value",
+  INVARIANT: "invariant",
+  SECURITY: "security",
+  LOGIN: "login",
+  UNKNOWN: "unknown",
+  EXPIRED: "expired",
+  CONFLICT: "conflict",
+  TOO_LONG: "too-long",
+  CODE_INVALID: "code-invalid",
+  NOT_FOUND: "not-found",
+  DUPLICATE: "duplicate",
+  FORBIDDEN: "forbidden",
+  PROCESSING: "processing",
+  EXCEPTION: "exception",
+  NOT_SUPPORTED: "not-supported",
+});

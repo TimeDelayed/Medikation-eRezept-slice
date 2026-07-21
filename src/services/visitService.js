@@ -1,5 +1,10 @@
-import { CONSENT_DECISION_DENY, CONSENT_DECISION_PERMIT, VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED } from "../constants/fhirConstants.js";
-
+import {
+  CONSENT_DECISION_DENY,
+  CONSENT_DECISION_PERMIT,
+  OPERATION_OUTCOME_ISSUE_CODE,
+  VISIT_COMPLETED_ANAMNESIS,
+  VISIT_FINALIZED,
+} from "../constants/fhirConstants.js";
 import {
   fhirGetActiveAnamnesisConsents,
   fhirPostTransactionBundle,
@@ -247,59 +252,55 @@ export const findPatientByKv = async ({
   return patients[0];
 };
 
-export const findOrCreatePatientByDemographics =
-  async ({
-    patientInternalIdentifier,
+export const findOrCreatePatientByDemographics = async ({
+  patientInternalIdentifier,
+  familyName,
+  givenNames,
+  birthday,
+  address,
+  gender,
+}) => {
+  const givenName = givenNames[0];
+  const fhirAddress = createAddress(address);
+
+  const patient = await findPatientByDemographics({
+    familyName,
+    givenName,
+    birthday,
+    address: fhirAddress,
+    gender,
+  });
+
+  if (patient) {
+    return patient;
+  }
+
+  const newPatient = createFhirPatient({
+    identifier: createInternalIdentifier(
+      patientInternalIdentifier,
+    ),
     familyName,
     givenNames,
     birthday,
-    address,
     gender,
-  }) => {
+    address: fhirAddress,
+  });
 
-    const givenName = givenNames[0];
+  const created = await fhirPostPatient(newPatient);
 
-    const fhirAddress =
-      createAddress(address);
+  if (!created?.id) {
+    throw new AppError(
+      502,
+      "FHIR Patient response did not contain a resource id.",
+      {
+        issueCode:
+          OPERATION_OUTCOME_ISSUE_CODE.PROCESSING,
+      },
+    );
+  }
 
-    const patient =
-      await findPatientByDemographics({
-        familyName,
-        givenName,
-        birthday,
-        address: fhirAddress,
-        gender,
-      });
-
-    if (patient) {
-      return patient;
-    }
-
-    const newPatient =
-      createFhirPatient({
-        identifier:
-          createInternalIdentifier(
-            patientInternalIdentifier,
-          ),
-        familyName,
-        givenNames,
-        birthday,
-        gender,
-        address: fhirAddress,
-      });
-
-    const created =
-      await fhirPostPatient(newPatient);
-
-    if (!created?.id) {
-      throw new AppError(
-        502,
-        "FHIR Patient response did not contain a resource id.",
-      );
-    }
-
-    return created;
-  };
+  return created;
+};
 
 // ---------- Anamnesis Functions ----------
 
@@ -310,12 +311,21 @@ export const submitAnamnesis = async ({
   consent,
   user,
 }) => {
+  const requestedDecision =
+    getConsentDecision(consent);
 
-  const requestedDecision = getConsentDecision(consent);
-  const visit = await findPendingVisitById(visitId);
+  const visit =
+    await findPendingVisitById(visitId);
 
   if (!visit) {
-    throw new AppError(404, "Visit not found. Searched for visits with status 'started'.");
+    throw new AppError(
+      404,
+      "Visit not found. Searched for visits with status 'started'.",
+      {
+        issueCode:
+          OPERATION_OUTCOME_ISSUE_CODE.NOT_FOUND,
+      },
+    );
   }
 
   const conditionInputs = toArray(condition);
@@ -333,6 +343,8 @@ export const submitAnamnesis = async ({
       409,
       "Multiple active anamnesis Consents exist for this patient.",
       {
+        issueCode:
+          OPERATION_OUTCOME_ISSUE_CODE.CONFLICT,
         consents: activeConsents,
       },
     );
@@ -351,19 +363,23 @@ export const submitAnamnesis = async ({
       medicationInputs,
     );
 
-  const transaction = resolveConsentTransaction({
-    patientId: visit.patientFhirId,
-    requestedDecision,
-    currentConsent,
-    resources: [
-      ...conditions,
-      ...medicationStatements,
-    ],
-    user,
-    createPermitBundle: createPermittedAnamnesisBundle,
-    createDenyBundle: createDeniedAnamnesisConsentBundle,
-    createDataBundle: createAnamnesisDataBundle,
-  });
+  const transaction =
+    resolveConsentTransaction({
+      patientId: visit.patientFhirId,
+      requestedDecision,
+      currentConsent,
+      resources: [
+        ...conditions,
+        ...medicationStatements,
+      ],
+      user,
+      createPermitBundle:
+        createPermittedAnamnesisBundle,
+      createDenyBundle:
+        createDeniedAnamnesisConsentBundle,
+      createDataBundle:
+        createAnamnesisDataBundle,
+    });
 
   const transactionResult = transaction.bundle
     ? await fhirPostTransactionBundle(
@@ -386,7 +402,7 @@ export const submitAnamnesis = async ({
           ? new Date()
           : currentConsent.dateTime,
     },
-    ...(transaction.sendsAnamnesis &&
+    ...(transaction.sendsData &&
     transactionResult
       ? {
         sentToFhirAt: new Date(),
@@ -398,13 +414,12 @@ export const submitAnamnesis = async ({
     visit.fhirBundleRef = transactionResult.id;
   }
 
-
   return {
     visitId: visit.visitId,
     visitStatus: visit.visitStatus,
     consentDecision: transaction.decision,
     anamnesisSentToFhir:
-      transaction.sendsAnamnesis &&
+      transaction.sendsData &&
       Boolean(transactionResult),
     anamnesis: visit.anamnesis,
   };
@@ -419,12 +434,19 @@ export const submitMedicationRequest = async ({
   const requestedDecision =
     getConsentDecision(consent);
 
-  const visit = await findAnamnesisCompletedVisitById(visitId);
+  const visit =
+    await findAnamnesisCompletedVisitById(
+      visitId,
+    );
 
   if (!visit) {
     throw new AppError(
       404,
       "Visit not found.",
+      {
+        issueCode:
+          OPERATION_OUTCOME_ISSUE_CODE.NOT_FOUND,
+      },
     );
   }
 
@@ -438,6 +460,8 @@ export const submitMedicationRequest = async ({
       409,
       "Multiple active medication Consents exist for this patient.",
       {
+        issueCode:
+          OPERATION_OUTCOME_ISSUE_CODE.CONFLICT,
         consents: activeConsents,
       },
     );
@@ -494,93 +518,84 @@ export const submitMedicationRequest = async ({
       : {}),
   };
 
-
-
   if (transactionResult?.id) {
     visit.fhirBundleRef =
       transactionResult.id;
   }
 
+  return {
+    visitId: visit.visitId,
+    visitStatus: visit.visitStatus,
+    consentDecision: transaction.decision,
+    medicationRequestSentToFhir:
+      transaction.sendsData &&
+      Boolean(transactionResult),
+    prescription: visit.prescription,
+  };
+};
 
+const createVisitForPatient = async ({
+  patient,
+  kv,
+  patientInternalIdentifier,
+}) => {
+  const pending =
+    await checkIfPatientHasPendingVisit(
+      patient.id,
+    );
+
+  if (pending) {
+    throw new AppError(
+      409,
+      "Patient already has a pending Visit.",
+      {
+        issueCode:
+          OPERATION_OUTCOME_ISSUE_CODE.CONFLICT,
+        visit: pending,
+      },
+    );
+  }
+
+  const visit = await createLocalVisit({
+    kv,
+    patientInternalIdentifier,
+    patientFhirId: patient.id,
+    visitStatus: "started",
+  });
 
   return {
     visitId: visit.visitId,
     visitStatus: visit.visitStatus,
-    consentDecision:
-      transaction.decision,
-    medicationRequestSentToFhir:
-      transaction.sendsData &&
-      Boolean(transactionResult),
-    prescription:
-      visit.prescription,
+    patientFhirId: visit.patientFhirId,
+    patient,
   };
 };
 
-const createVisitForPatient =
-  async ({
-    patient,
-    kv,
-    patientInternalIdentifier,
-  }) => {
-
-    const pending =
-      await checkIfPatientHasPendingVisit(
-        patient.id,
-      );
-
-    if (pending) {
-      const error =
-        new AppError(
-          409,
-          "Patient already has a pending Visit.",
-        );
-
-      error.visit = pending;
-
-      throw error;
-    }
-
-    const visit =
-      await createLocalVisit({
-        kv,
-        patientInternalIdentifier,
-        patientFhirId: patient.id,
-        visitStatus:"started",
-      });
-
-    return {
-      visitId: visit.visitId,
-      visitStatus: visit.visitStatus,
-      patientFhirId: visit.patientFhirId,
-      patient,
-    };
-  };
-
-export const createVisitFromKv =
-  async ({
+export const createVisitFromKv = async ({
+  kv,
+  insuranceType,
+}) => {
+  const patient = await findPatientByKv({
     kv,
     insuranceType,
-  }) => {
+  });
 
-    const patient =
-      await findPatientByKv({
-        kv,
-        insuranceType,
-      });
+  if (!patient) {
+    throw new AppError(
+      404,
+      "Patient not found.",
+      {
+        issueCode:
+          OPERATION_OUTCOME_ISSUE_CODE.NOT_FOUND,
+      },
+    );
+  }
 
-    if (!patient) {
-      throw new AppError(
-        404,
-        "Patient not found.",
-      );
-    }
-
-    return createVisitForPatient({
-      patient,
-      kv,
-    });
-  };
-
+  return createVisitForPatient({
+    patient,
+    kv,
+  });
+};
 export const createVisitFromDemographics =
   async (input) => {
 

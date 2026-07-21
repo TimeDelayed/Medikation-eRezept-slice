@@ -12,9 +12,6 @@ import {
   sendErrorResponse,
 } from "../util/errorHelpers.js";
 import { findVisitById } from "../util/dbHelpers.js";
-import { createFhirMedicationRequest, createFhirTransactionBundle } from "../util/mapper.js";
-import { fhirPostTransactionBundle } from "../fhirClient/fhir-client.js";
-import { AppError } from "../errors/AppError.js";
 import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED } from "../constants/fhirConstants.js";
 import { submitMedicationRequest } from "../services/VisitService.js";
 

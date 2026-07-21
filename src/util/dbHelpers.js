@@ -1,8 +1,11 @@
-
-import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED, VISIT_STARTED_STATUS } from "../constants/fhirConstants.js";
+import {
+  VISIT_COMPLETED_ANAMNESIS,
+  VISIT_STARTED_STATUS,
+  OPERATION_OUTCOME_ISSUE_CODE,
+} from "../constants/fhirConstants.js";
 import Visit from "../db/schema/visit.schema.js";
 import { AppError } from "../errors/AppError.js";
-import { hashHelperIdentifier as hashHelperIdentifier } from "./hashingHelper.js";
+import { hashHelperIdentifier } from "./hashingHelper.js";
 
 /**
  * Executes a database operation and converts database errors
@@ -17,6 +20,7 @@ const executeDatabaseOperation = async (
   } catch (error) {
     throw new AppError(500, errorMessage, {
       cause: error,
+      issueCode: OPERATION_OUTCOME_ISSUE_CODE.EXCEPTION,
     });
   }
 };
@@ -53,20 +57,28 @@ export const checkIfPatientHasPendingVisit = async (
  */
 export const findPendingVisitById = async (visitId) => {
   return executeDatabaseOperation(
-    () => Visit.findOne({
-      visitId,
-      visitStatus: { $in: [VISIT_STARTED_STATUS] },
-    }),
+    () =>
+      Visit.findOne({
+        visitId,
+        visitStatus: {
+          $in: [VISIT_STARTED_STATUS],
+        },
+      }),
     "Database failed while loading the Visit.",
   );
 };
 
-export const findAnamnesisCompletedVisitById = async (visitId) => {
+export const findAnamnesisCompletedVisitById = async (
+  visitId,
+) => {
   return executeDatabaseOperation(
-    () => Visit.findOne({
-      visitId,
-      visitStatus: { $in: [VISIT_COMPLETED_ANAMNESIS] },
-    }),
+    () =>
+      Visit.findOne({
+        visitId,
+        visitStatus: {
+          $in: [VISIT_COMPLETED_ANAMNESIS],
+        },
+      }),
     "Database failed while loading the Visit.",
   );
 };
