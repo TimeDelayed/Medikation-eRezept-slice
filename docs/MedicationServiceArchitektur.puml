@@ -42,6 +42,7 @@ VisitService --> VisitModel : lesen / speichern
 
 FhirClient --> FHIR : REST
 
+Audit --> AuditModel
 
 VisitModel --> Mongo
 AuditModel --> Mongo
