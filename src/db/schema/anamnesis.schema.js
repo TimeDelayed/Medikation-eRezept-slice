@@ -12,10 +12,12 @@ const anamnesisSchema = new Schema({
   preexistingConditions: [{
     code: String,
     display : String,
+    _id: false,
   }],
   longTermMedications: [{
     code: String,
     display : String,
+    _id: false,
   }],
   fhirSubmittedAt: {
     type: Date,

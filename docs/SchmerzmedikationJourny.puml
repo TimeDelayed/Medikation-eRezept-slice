@@ -89,15 +89,20 @@ Dummy GET für unser Szenario
 end note
 :Arzt: Diagnose + Schmerzmedikation wählen;
 note right
-Es wird einfach random eine bei uns aus der DB gezogen
+Es wird einfach random ausgewählt
 end note
 
 :Verordnung vormerken
 (lokal in MongoDB);
 
+if (Consent?) then (ja)
 : Vorgang abschließen
 POST / (Bundle transaction)
 MedicationRequest + Provenance atomar;
+else (nein)
+:bleibt local bei uns
+ Ablehnung Consent zu FHIR (bereits vorhanden)) für dokumentation;
+end if
 
 :Behandlungsdokumentation bleibt gespeichert (Aufbewahrungspflicht von 10 Jahre);
 note right
