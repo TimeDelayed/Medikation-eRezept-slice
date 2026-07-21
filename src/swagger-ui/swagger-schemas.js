@@ -1,3 +1,4 @@
+// Deprecated!
 export const schemas = {
   PatientCreate: {
     type: "object",
