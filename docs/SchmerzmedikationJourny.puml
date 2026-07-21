@@ -4,13 +4,18 @@ start
 :Patient betritt Arzt Praxis;
 
 :Schalter: Name / Versichertenkarte abgeben;
-if(Notfall) then(Nein)
-:suche via kv
-GET /Patient?identifier=KVNR (Name, usw. als Tiebreaker!));
-else(ja)
- :suche ohne kv
- (via Name und anderen Attributen)
- GET /Patient?name=...&birthdate=...;
+if (KV vorhanden?) then (ja)
+  :Suche via KV
+  GET /Patient?identifier=KVNR;
+  note right
+    Falls mehrere Patienten gefunden werden,
+    weil der FHIR Server nicht auf Dopplungen der KV
+    achtet, nehmen wir den ersten Treffer.
+  end note
+else (nein)
+  :Suche über Stammdaten
+  (Name, Geburtsdatum, Adresse, ...);
+  :GET /Patient (identifier=KVNR);
 endif
 
 if (gefunden?) then (ja)
@@ -18,84 +23,93 @@ else (nein)
   :Patient neu anlegen
   POST /Patient auf FHIR;
 endif
-:Wichtig;
- note right
-    Patient existiert zu diesem Zeitpunk 100% auf fhir (Source of Truth)
-  end note
 
-:Anamnesebogen / Update ausfüllen
-(inkl. Einwilligung zur Datenübermittlung);
+:Wichtig;
+note right
+Patient existiert ab hier
+100% auf FHIR
+(Source of Truth)
+end note
+
+:Anamnese / Update ausfüllen
+(Vorerkrankungen,
+Dauermedikamente,
+Consent);
 
 :Aktiven Consent prüfen
-GET /Consent?patient=...&status=active (FHIR);
+GET /Consent?patient=...&status=active;
 
-if (neuer Consent angegeben?) then (ja)
-  :Neuen Consent mit der Anamnese
-  als Transaction Bundle senden;
+if (Neuer Consent angegeben?) then (ja)
 else (nein)
-  if (aktiver Permit-Consent vorhanden?) then (ja)
-    :Anamnese mit bestehendem
-    Consent übertragen;
+  if (Aktiver Permit-Consent?) then (ja)
   else (nein)
-    :Keine klinischen Daten übertragen;
+    :Keine medizinischen Daten
+    an FHIR übertragen;
   endif
 endif
 
-:Wichtig;
- note right
-   Wenn nichts neues dazukommt dann kann Anamnese 
-   übersprungen werden) = Wir haben zu diesem 
-   Zeitpunkt auch 100% die neuen Daten zum aktualiseren
-  end note
+note right
+Wenn sich nichts geändert hat,
+kann die Anamnese
+übersprungen werden.
+end note
 
-if (Consent?) then (ja)
-  :Aufnahme-Bundle zu FHIR?
-  Vorher ziehen?
-  Dauermedikation im System aktualisieren
-  POST / (Bundle = transaction):
-    Condition (Vorerkrankungen)
-  + MedicationStatement (Dauermedikamente)
-  + Consent (DSGVO)
-  + Provenance
-  -> Alle referenzieren den Patienten!;
-else (nein)
-  :Anamnese bleibt lokal / auf Papier
-  Ablehnung Consent zu FHIR (bereits vorhanden)) für dokumentation
-  keine klinischen Daten (Condition,
-  MedicationStatement);
+if (Anamnesis-Consent?) then (Consent: permit)
+  :POST Bundle (transaction) an FHIR
+  Condition
+  + MedicationStatement
+  + ggf. Consent
+  + Provenance;
+else (Consent denied)
+  :Anamnese bleibt lokal;
 endif
 
 :Behandlungszimmer beim Arzt;
+
 note left
-vieles hiervon ist nur "gespielt"
+Vieles hiervon
+ist nur "gespielt".
 end note
-:Arzt: Medikationshistorie abrufen
+
+:Medikationshistorie abrufen
 GET /MedicationStatement?subject=...&status=active;
+
 note right
-Dummy GET für unser Szenario
+Dummy GET
+für unser Szenario,
+es wird nur im Arztzimmer gebraucht und damit
+hier "gespielt".
 end note
-:Arzt: Diagnose + Schmerzmedikation wählen;
+
+:Diagnose +
+Schmerzmedikation wählen;
+
 note right
-Es wird einfach random ausgewählt
+Medikation hier "gespielt" einfach
+zufällig eintragen.
 end note
 
-:Verordnung vormerken
-(lokal in MongoDB);
+:Verordnung lokal speichern;
 
-if (Consent?) then (ja)
-: Vorgang abschließen
-POST / (Bundle transaction)
-MedicationRequest + Provenance atomar;
-else (nein)
-:bleibt local bei uns
- Ablehnung Consent zu FHIR (bereits vorhanden)) für dokumentation;
-end if
+if (Verordnungs-Consent?) then (Consent: permit)
+  :POST Bundle (transaction) an FHIR
+  MedicationRequest
+  + ggf. Consent
+  + Provenance;
+else (Consent: denied)
+  :Verordnung
+  bleibt lokal;
+endif
 
-:Behandlungsdokumentation bleibt gespeichert (Aufbewahrungspflicht von 10 Jahre);
+:Behandlungsdokumentation
+bleibt gespeichert;
+
 note right
-Durch mongoDB geregelt (expireAfterSeconds)
+TTL-Index in MongoDB
+(10 Jahre)
 end note
 
 :Medikation erfolgreich verordnet;
 stop
+
 @enduml
