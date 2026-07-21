@@ -307,7 +307,6 @@ export const fhirGetMedicationStatementById = async (medicationStatementId) => {
 
 export const fhirGetAllMedicationStatementsByPatientId = async (patientId) => {
   requireValue(patientId, "patientId");
-
   const result = await fhir.get("/MedicationStatement", {
     params: {
       subject: patientId,

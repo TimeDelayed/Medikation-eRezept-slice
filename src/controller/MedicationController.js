@@ -7,10 +7,11 @@ export const getMedicationStatementHandler = async (
   res,
 ) => {
   const visitId = req.params.visitId;
-  console.log(visitId);
+
 
   const currentVisit = await findVisitById(visitId);
-  console.log(currentVisit);
+
+
 
   try {
     const subject = currentVisit.patientFhirId;

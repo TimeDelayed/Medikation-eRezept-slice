@@ -24,7 +24,7 @@ import {
 import {
   createPermittedAnamnesisBundle,
   createDeniedAnamnesisConsentBundle,
-  createAnamnesisDataBundle,
+  createDataBundle,
   createFhirConditions,
   createFhirMedicationStatements,
   createFhirPatient,
@@ -32,7 +32,6 @@ import {
   createFhirMedicationRequest,
   createPermittedMedicationRequestBundle,
   createDeniedMedicationConsentBundle,
-  createMedicationRequestDataBundle,
 } from "../util/mapper.js";
 
 import {
@@ -378,7 +377,7 @@ export const submitAnamnesis = async ({
       createDenyBundle:
         createDeniedAnamnesisConsentBundle,
       createDataBundle:
-        createAnamnesisDataBundle,
+        createDataBundle,
     });
 
   const transactionResult = transaction.bundle
@@ -487,7 +486,7 @@ export const submitMedicationRequest = async ({
       createDenyBundle:
         createDeniedMedicationConsentBundle,
       createDataBundle:
-        createMedicationRequestDataBundle,
+        createDataBundle,
     });
 
   const transactionResult = transaction.bundle

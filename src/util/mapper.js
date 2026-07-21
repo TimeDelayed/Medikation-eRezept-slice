@@ -418,8 +418,7 @@ export const createDeniedMedicationConsentBundle = ({
 export const createPermittedAnamnesisBundle = ({
   patientId,
   currentConsent,
-  conditions = [],
-  medicationStatements = [],
+  resources = [],
   user,
 }) => {
   const permitConsent =
@@ -431,10 +430,7 @@ export const createPermittedAnamnesisBundle = ({
   return createConsentReplacementBundle({
     currentConsent,
     newConsent: permitConsent,
-    resources: [
-      ...conditions,
-      ...medicationStatements,
-    ],
+    resources,
     user,
   });
 };
@@ -442,7 +438,7 @@ export const createPermittedAnamnesisBundle = ({
 export const createPermittedMedicationRequestBundle = ({
   patientId,
   currentConsent,
-  medicationRequests = [],
+  resources = [],
   user,
 }) => {
   const permitConsent =
@@ -450,12 +446,11 @@ export const createPermittedMedicationRequestBundle = ({
       patientId,
       decision: CONSENT_DECISION_PERMIT,
     });
+
   return createConsentReplacementBundle({
     currentConsent,
     newConsent: permitConsent,
-    resources: [
-      ...medicationRequests,
-    ],
+    resources,
     user,
   });
 };
@@ -543,28 +538,12 @@ export const createFhirProvenanceFromEntries = ({
  * The existing Consent is not posted again.
  * Provenance is added for the newly submitted resources.
  */
-export const createAnamnesisDataBundle = ({
-  conditions = [],
-  medicationStatements = [],
+export const createDataBundle = ({
+  resources = [],
   user,
 }) => {
   return createFhirTransactionBundle(
-    [
-      ...conditions,
-      ...medicationStatements,
-    ],
-    user,
-  );
-};
-
-export const createMedicationRequestDataBundle = ({
-  medicationRequests = [],
-  user,
-}) => {
-  return createFhirTransactionBundle(
-    [
-      ...medicationRequests,
-    ],
+    resources,
     user,
   );
 };
