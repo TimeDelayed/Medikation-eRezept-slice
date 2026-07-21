@@ -404,17 +404,16 @@ export const submitAnamnesis = async ({
     },
     ...(transaction.sendsData &&
     transactionResult
-      ? {
-        sentToFhirAt: new Date(),
-      }
-      : {}),
+      ? { fhirSubmittedAt: new Date() } : {}),
   };
+
+  visit.visitStatus = VISIT_COMPLETED_ANAMNESIS;
+  await visit.save();
 
   if (transactionResult?.id) {
     visit.fhirBundleRef = transactionResult.id;
   }
-  visit.visitStatus = VISIT_COMPLETED_ANAMNESIS;
-  await visit.save();
+
   return {
     visitId: visit.visitId,
     visitStatus: visit.visitStatus,
@@ -537,6 +536,7 @@ export const submitMedicationRequest = async ({
     visit.fhirBundleRef =
       transactionResult.id;
   }
+
   visit.visitStatus = VISIT_FINALIZED;
   await visit.save();
 
