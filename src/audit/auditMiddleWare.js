@@ -14,7 +14,7 @@ export const auditMiddleware = async (req, res, next) => {
       await AuditTrail.create({
         transactionId: req.transactionId,
         actor: {
-          userId: req.user?.name ?? "UNDEFINED",
+          userId: req.user?.sub ?? "UNDEFINED",
           userRoles: req.user?.roles ?? ["UNDEFINED"],
         },
         action: req.auditOptions?.action,
