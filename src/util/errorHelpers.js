@@ -30,6 +30,9 @@ export const sendErrorResponse = (
     fallbackMessage,
   ];
 
+  // add the error to the audit (better trail)
+  res.req.auditError = diagnostics.join("; ");
+
   return res.status(statusCode).json({
     resourceType: "OperationOutcome",
     issue: diagnostics.map((diagnostic) => ({

@@ -18,6 +18,7 @@ export const securityMiddleware = async (req, res, next) => {
     console.log(req.user);
   } catch (e) {
     console.log(e);
+    req.auditError = e.message;
     return res.status(401).json({ error: "Invalid token" });
   }
 
@@ -29,11 +30,8 @@ export const securityMiddleware = async (req, res, next) => {
 export const handleDummyLogin = (req, res) => {
   const { username, password } = req.body;
 
-  // also set for failed attempts, so the audit shows which account
-  // someone tried to log in as
-  setAuditIdsHelper(req, { resourceId: username });
-
   if (username !== "admin" || password !== "admin") {
+    req.auditError = "Invalid credentials";
     return res.status(401).json({ error: "Invalid credentials" });
   }
 

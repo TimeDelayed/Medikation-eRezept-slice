@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import { nanoid } from "nanoid";
+import mongoose, { Error } from "mongoose";
+import { randomUUID } from "node:crypto";
 import { Schema } from "mongoose";
 import { ResourceType } from "./ressourceType.js";
 import { nextSeq } from "./counter.schema.js";
@@ -8,7 +8,7 @@ import { nextSeq } from "./counter.schema.js";
 // https://dev.to/williamsgqdev/step-by-step-guide-to-implementing-nodejs-audit-trail-jic
 const auditTrail = new Schema({
   entryId: { type: Number, unique: true },
-  auditId:  { type: String, required: true, default: () => nanoid() },
+  transactionId:  { type: String, required: true, default: () => randomUUID() },
   actor: {
     userId: {
       type: String,
@@ -77,6 +77,50 @@ auditTrail.pre("save", async function () {
   }
   this.entryId = await nextSeq("auditTrail");
 });
+
+// zusätzlich beim Audit sperren wir das nachträgliche ändern.
+// wir erreichen dass, indem wir in die Query functions eine Middleware hinzufügen und einen Error werfen
+//https://mongoosejs.com/docs/middleware.html
+/**
+ * aggregate
+ * bulkWrite
+ * countDocuments
+ * createCollection
+ * deleteMany
+ * deleteOne
+ * distinct
+ * estimatedDocumentCount
+ * find
+ * findOne
+ * findOneAndDelete
+ * findOneAndReplace
+ * findOneAndUpdate
+ * init
+ * insertMany
+ * replaceOne
+ * save
+ * updateMany
+ * updateOne
+ * validate
+ */
+
+const queryFunctions = ["updateOne",
+  "updateMany",
+  "findOneAndUpdate",
+  "findOneAndReplace",
+  "replaceOne",
+  "deleteOne",
+  "deleteMany",
+  "findOneAndDelete"];
+
+queryFunctions.forEach((queryFunction) => {
+  auditTrail.pre(queryFunction, function () {
+    throw new Error(
+      `Audit entries are append-only, '${queryFunction}' is not allowed.`,
+    );
+  });
+});
+
 const AuditTrail = mongoose.model("AuditTrail", auditTrail);
 
 export default AuditTrail;
