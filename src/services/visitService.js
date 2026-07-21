@@ -413,9 +413,9 @@ export const submitAnamnesis = async ({
   if (transactionResult?.id) {
     visit.fhirBundleRef = transactionResult.id;
   }
-
+  visit.visitStatus = VISIT_COMPLETED_ANAMNESIS;
+  await visit.save();
   return {
-    visit,
     visitId: visit.visitId,
     visitStatus: visit.visitStatus,
     consentDecision: transaction.decision,
@@ -529,9 +529,9 @@ export const submitMedicationRequest = async ({
     visit.fhirBundleRef =
       transactionResult.id;
   }
-
+  visit.visitStatus = VISIT_FINALIZED;
+  await visit.save();
   return {
-    visit,
     visitId: visit.visitId,
     visitStatus: visit.visitStatus,
     consentDecision: transaction.decision,

@@ -146,16 +146,13 @@ export const submitAnamnesisHandler = async (
       ...req.body,
     });
 
-    const { visit, ...response } = result;
-    visit.visitStatus = VISIT_COMPLETED_ANAMNESIS;
-    await visit.save();
 
     setAuditIdsHelper(req, {
       resourceId: result.fhirBundleRef,
       entities: result.createdEntities,
     });
 
-    return res.status(201).json(response);
+    return res.status(201).json(result);
   } catch (error) {
     console.error(
       JSON.stringify(
@@ -196,16 +193,13 @@ export const createMedicationRequestBundleHandler =
           user: req.user,
         });
 
-      const { visit, ...response } = result;
-      visit.visitStatus = VISIT_FINALIZED;
-      await visit.save();
 
       setAuditIdsHelper(req, {
         resourceId: result.fhirBundleRef,
         entities: result.createdEntities,
       });
 
-      return res.status(201).json(response);
+      return res.status(201).json(result);
     } catch (error) {
       console.error(
         JSON.stringify(
