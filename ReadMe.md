@@ -15,6 +15,11 @@ Die Leistung verteilt sich somit auf etwa 50 / 50.
 Damit man unseren Code versteht, müssen zuerst einige grundlegende Grundsteine gelegt werden.
 Auf diesen Grundsteinen baut die gesamte Architektur des Services auf.
 
+Notiz: Aus der Aufgabenstellung auf Miro ging lediglich hervor, dass eine Schmerzmedikation verordnet wird. 
+Daher haben wir unseren Ablauf auf genau einen MedicationRequest ausgelegt. 
+Die Architektur lässt sich jedoch problemlos erweitern, indem mehrere MedicationRequest-Ressourcen in einem gemeinsamen Transaction-Bundle übertragen werden. 
+Aus Zeitgründen haben wir hier nur das Nötigste gemacht.
+
 ### 1. FHIR als einzige Source of Truth
 
 Wir können uns an **keiner** Stelle im Prozess darauf verlassen, dass lokal gespeicherte Patientendaten aktuell sind.
