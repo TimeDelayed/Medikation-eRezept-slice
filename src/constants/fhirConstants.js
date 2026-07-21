@@ -71,11 +71,13 @@ export const MEDICATION_CONSENT_DISPLAY =
   "Medication request sharing consent";
 export const MEDICATION_CONSENT_CATEGORY_TOKEN =
   `${CONSENT_CODESYSTEM}|${MEDICATION_CONSENT_CATEGORY}`;
+export const MEDICATION_REQUEST_INTENT_ORDER = "order";
 
-// ---------- Consent status ----------
+// ---------- Statuses ----------
 
-export const CONSENT_STATUS_ACTIVE = "active";
-export const CONSENT_STATUS_INACTIVE = "inactive";
+export const STATUS_ACTIVE = "active";
+export const STATUS_INACTIVE = "inactive";
+
 
 // ---------- Consent decisions ----------
 
