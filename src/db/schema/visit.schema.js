@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { nanoid } from "nanoid";
 import { Schema } from "mongoose";
 import anamnesisSchema from "./anamnesis.schema.js";
+import prescriptionSchema from "./prescription.schema.js";
 import { VISIT_STATUSES } from "../../constants/fhirConstants.js";
 
 //https://mongoosejs.com/docs/guide.html#timeseries
@@ -31,25 +32,18 @@ const visitSchema = new Schema({
     required: true,
     default: "started",
   },
-  // anamnesis (übergangsweise zum speichern (löschung,wenn consent nicht vorhanden))
+  // anamnesis
   anamnesis : {
     type: anamnesisSchema,
     required: false,
     _id: false,
   },
   // from doctor
-  localPrescriptions: [
-    {
-      code: {
-        type: String,
-        required: false,
-      },
-      medication : {
-        type: String,
-        required: false,
-      },
-    },
-  ],
+  prescription : {
+    type: prescriptionSchema,
+    required: false,
+    _id: false,
+  },
   // send bundle
   fhirBundleRef: {
     type: String,

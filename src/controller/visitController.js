@@ -17,7 +17,7 @@ import {
 } from "../util/errorHelpers.js";
 import { findVisitById } from "../util/dbHelpers.js";
 import { setAuditIdsHelper } from "../audit/auditHelper.js";
-import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED } from "../constants/fhirConstants.js";
+import { VISIT_COMPLETED_ANAMNESIS } from "../constants/fhirConstants.js";
 import { response } from "express";
 
 
@@ -192,7 +192,6 @@ export const createMedicationRequestBundleHandler =
           ...req.body,
           user: req.user,
         });
-
 
       setAuditIdsHelper(req, {
         resourceId: result.fhirBundleRef,

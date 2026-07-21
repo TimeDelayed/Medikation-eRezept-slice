@@ -10,10 +10,7 @@ export const getMedicationStatementHandler = async (
 ) => {
   const visitId = req.params.visitId;
 
-
   const currentVisit = await findVisitById(visitId);
-
-
 
   try {
     const subject = currentVisit.patientFhirId;

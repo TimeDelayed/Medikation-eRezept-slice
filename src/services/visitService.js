@@ -497,6 +497,23 @@ export const submitMedicationRequest = async ({
         createDataBundle,
     });
 
+  // document prescription in db bevor send to fhir
+  // If transaction fails
+  visit.prescription = {
+    medicationRequest,
+    consent: {
+      decision: transaction.decision,
+      fhirConsentId: currentConsent?.id,
+      decidedAt:
+        requestedDecision || !currentConsent
+          ? new Date()
+          : currentConsent.dateTime,
+    },
+  };
+
+  await visit.save();
+
+  // aufteilen von dem was wir wissen.
   const transactionResult = transaction.bundle
     ? await fhirPostTransactionBundle(
       transaction.bundle,
@@ -506,24 +523,17 @@ export const submitMedicationRequest = async ({
   const createdConsentId =
     getCreatedConsentId(transactionResult);
 
-  visit.prescription = {
-    medicationRequest,
-    consent: {
-      decision: transaction.decision,
-      fhirConsentId:
-        createdConsentId ?? currentConsent?.id,
-      decidedAt:
-        requestedDecision || !currentConsent
-          ? new Date()
-          : currentConsent.dateTime,
-    },
-    ...(transaction.sendsData &&
+  if (createdConsentId) {
+    visit.prescription.consent.fhirConsentId =
+      createdConsentId;
+  }
+
+  if (
+    transaction.sendsData &&
     transactionResult
-      ? {
-        sentToFhirAt: new Date(),
-      }
-      : {}),
-  };
+  ) {
+    visit.prescription.sentToFhirAt = new Date();
+  }
 
   if (transactionResult?.id) {
     visit.fhirBundleRef =
@@ -531,6 +541,7 @@ export const submitMedicationRequest = async ({
   }
   visit.visitStatus = VISIT_FINALIZED;
   await visit.save();
+
   return {
     visitId: visit.visitId,
     visitStatus: visit.visitStatus,
