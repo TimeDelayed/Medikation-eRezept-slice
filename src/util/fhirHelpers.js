@@ -5,7 +5,7 @@ import {
   PKV_IDENTIFIER_SYSTEM,
   IDENTIFIER_TYPE_SYSTEM,
   FHIR_BASE_URL,
-  CONSENT_STATUS_INACTIVE,
+  STATUS_INACTIVE,
 } from "../constants/fhirConstants.js";
 import crypto from "crypto";
 
@@ -153,7 +153,7 @@ export const deactivateConsent = (consent) => {
 
   return {
     ...consent,
-    status: CONSENT_STATUS_INACTIVE,
+    status: STATUS_INACTIVE,
   };
 };
 

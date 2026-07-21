@@ -4,7 +4,7 @@ import {
   CONSENT_CODESYSTEM_NAME,
   VALID_CONSENT_DECISIONS,
   CONSENT_SCOPE_SYSTEM,
-  CONSENT_STATUS_ACTIVE,
+  STATUS_ACTIVE,
   CONSENT_DECISION_PERMIT,
   CONSENT_DECISION_DENY,
   FHIR_NAMESPACE,
@@ -13,6 +13,7 @@ import {
   IDENTIFIER_INTERNAL_SYSTEM,
   MEDICATION_CONSENT_CATEGORY,
   MEDICATION_CONSENT_DISPLAY,
+  MEDICATION_REQUEST_INTENT_ORDER,
 } from "../constants/fhirConstants.js";
 
 import {
@@ -129,7 +130,7 @@ export const createFhirConsent = ({
 
   return {
     resourceType: "Consent",
-    status: CONSENT_STATUS_ACTIVE,
+    status: STATUS_ACTIVE,
     scope: {
       coding: [
         {
@@ -259,12 +260,11 @@ export const createFhirMedication = ({
  */
 export const createFhirMedicationStatement = ({
   patientId,
-  status = "active",
   code,
   display,
 }) => ({
   resourceType: "MedicationStatement",
-  status,
+  status: STATUS_ACTIVE,
   medicationCodeableConcept: createFhirCodeableConcept(
     code,
     "medication",
@@ -279,14 +279,12 @@ export const createFhirMedicationStatement = ({
 // just as the medicationStatement
 export const createFhirMedicationRequest = ({
   patientId,
-  status = "active",
-  intent = "order",
   code,
   display,
 }) => ({
   resourceType: "MedicationRequest",
-  status,
-  intent,
+  status: STATUS_ACTIVE,
+  intent: MEDICATION_REQUEST_INTENT_ORDER,
   medicationCodeableConcept: createFhirCodeableConcept(
     code,
     "medication",

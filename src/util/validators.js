@@ -240,19 +240,7 @@ export const validateSubmitAnamnesisInput = ({
     );
   }
 
-  if (
-    medicationStatement !== undefined &&
-    !Array.isArray(medicationStatement) &&
-    typeof medicationStatement !== "object"
-  ) {
-    throw new AppError(
-      400,
-      "medicationStatement must be an object or an array.",
-      {
-        issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
-      },
-    );
-  }
+  validateMedicationStatements(medicationStatement);
 };
 
 export const validateMedicationRequestInput = ({
@@ -313,5 +301,69 @@ export const validateMedicationRequestInput = ({
         issueCode: OPERATION_OUTCOME_ISSUE_CODE.VALUE,
       },
     );
+  }
+};
+
+export const validateMedicationStatements = (
+  medicationStatements,
+) => {
+  if (medicationStatements === undefined) {
+    return;
+  }
+
+  const statements = Array.isArray(medicationStatements)
+    ? medicationStatements
+    : [medicationStatements];
+
+  for (const statement of statements) {
+    if (
+      !statement ||
+      typeof statement !== "object"
+    ) {
+      throw new AppError(
+        400,
+        "Each medicationStatement must be an object.",
+        {
+          issueCode:
+            OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+        },
+      );
+    }
+
+    if (!isNonEmptyString(statement.code)) {
+      throw new AppError(
+        400,
+        "medicationStatement.code is required.",
+        {
+          issueCode:
+            OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+        },
+      );
+    }
+
+    if (!isNonEmptyString(statement.display)) {
+      throw new AppError(
+        400,
+        "medicationStatement.display is required.",
+        {
+          issueCode:
+            OPERATION_OUTCOME_ISSUE_CODE.REQUIRED,
+        },
+      );
+    }
+
+    if (
+      statement.status &&
+      !["active", "completed", "entered-in-error", "intended", "stopped", "on-hold"].includes(statement.status)
+    ) {
+      throw new AppError(
+        400,
+        "medicationStatement.status is invalid.",
+        {
+          issueCode:
+            OPERATION_OUTCOME_ISSUE_CODE.VALUE,
+        },
+      );
+    }
   }
 };
