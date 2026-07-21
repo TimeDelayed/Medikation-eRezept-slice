@@ -55,7 +55,7 @@ export const checkIfPatientHasPendingVisit = async (
  * - Visit document if found
  * - null if no Visit exists or the Visit is already completed
  */
-export const findPendingVisitById = async (visitId) => {
+export const findStartedVisitById = async (visitId) => {
   return executeDatabaseOperation(
     () =>
       Visit.findOne({
@@ -68,7 +68,7 @@ export const findPendingVisitById = async (visitId) => {
   );
 };
 
-export const findAnamnesisCompletedVisitById = async (
+export const findNotCompletedVisitById = async (
   visitId,
 ) => {
   return executeDatabaseOperation(
@@ -76,7 +76,7 @@ export const findAnamnesisCompletedVisitById = async (
       Visit.findOne({
         visitId,
         visitStatus: {
-          $in: [VISIT_COMPLETED_ANAMNESIS],
+          $in: [VISIT_COMPLETED_ANAMNESIS, VISIT_STARTED_STATUS],
         },
       }),
     "Database failed while loading the Visit.",

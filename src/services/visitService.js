@@ -39,8 +39,8 @@ import {
   checkIfPatientHasPendingVisit,
   createLocalVisit,
   findAllVisits,
-  findAnamnesisCompletedVisitById,
-  findPendingVisitById,
+  findNotCompletedVisitById,
+  findStartedVisitById,
 } from "../util/dbHelpers.js";
 
 
@@ -315,7 +315,7 @@ export const submitAnamnesis = async ({
     getConsentDecision(consent);
 
   const visit =
-    await findPendingVisitById(visitId);
+    await findStartedVisitById(visitId);
 
   if (!visit) {
     throw new AppError(
@@ -442,7 +442,7 @@ export const submitMedicationRequest = async ({
     getConsentDecision(consent);
 
   const visit =
-    await findAnamnesisCompletedVisitById(
+    await findNotCompletedVisitById(
       visitId,
     );
 
@@ -510,8 +510,6 @@ export const submitMedicationRequest = async ({
           : currentConsent.dateTime,
     },
   };
-
-  await visit.save();
 
   // aufteilen von dem was wir wissen.
   const transactionResult = transaction.bundle

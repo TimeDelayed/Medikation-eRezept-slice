@@ -16,7 +16,7 @@ endif
 if (gefunden?) then (ja)
 else (nein)
   :Patient neu anlegen
-  POST /Patient;
+  POST /Patient auf FHIR;
 endif
 :Wichtig;
  note right
@@ -24,7 +24,7 @@ endif
   end note
 
 :Consent prüfen
-GET /Consent?patient=...&status=active (FHIR));
+GET /Consent?patient=...&status=active (FHIR);
 if (gültiges DSGVO-Einverständnis auf FHIR?) then (ja)
  note left
    lokale DSGVO muss nicht aktuell sein, deshalb wieder bei fhir fragen!
@@ -33,7 +33,7 @@ else (nein)
   :DSGVO vom Patienten hohlen;
   if (stimmt zu?) then (ja)
     :Consent (permit) vormerken =
-    wird mit dem Aufnahme-Bundle geschickt (später));
+    wird mit dem Aufnahme-Bundle geschickt (später);
   else (nein)
     :Consent (deny) anlegen
     POST /Consent
@@ -58,7 +58,7 @@ endif
 
 :Wichtig;
  note right
-   Können wir einfach gleich behandeln = einfaches updates der Daten
+   Können wir einfach gleich behandeln (ergo Kurzes-Update und Anamnsesebogen sind beides die selbe Anamnese) = einfaches updates der Daten
    Wir haben zu diesem Zeitpunkt auch 100% die neuen Daten zum aktualiseren
   end note
 

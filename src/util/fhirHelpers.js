@@ -109,6 +109,9 @@ export const createConsentRef = (consentId) => {
  */
 export const createPostEntry = (resource) => {
   return {
+    // temporary local identifier used for intra-bundle references.
+    // needed so that provenance can reference the newly created resources in the same transaction bundle,
+    // fhir then replaces the temporary identifier with the actual resource id after creation
     fullUrl: `urn:uuid:${crypto.randomUUID()}`,
     resource,
     request: {
