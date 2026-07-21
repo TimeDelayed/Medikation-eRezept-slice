@@ -415,6 +415,7 @@ export const submitAnamnesis = async ({
   }
 
   return {
+    visit,
     visitId: visit.visitId,
     visitStatus: visit.visitStatus,
     consentDecision: transaction.decision,
@@ -530,6 +531,7 @@ export const submitMedicationRequest = async ({
   }
 
   return {
+    visit,
     visitId: visit.visitId,
     visitStatus: visit.visitStatus,
     consentDecision: transaction.decision,

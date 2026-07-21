@@ -18,6 +18,7 @@ import {
 import { findVisitById } from "../util/dbHelpers.js";
 import { setAuditIdsHelper } from "../audit/auditHelper.js";
 import { VISIT_COMPLETED_ANAMNESIS, VISIT_FINALIZED } from "../constants/fhirConstants.js";
+import { response } from "express";
 
 
 /**
@@ -145,7 +146,7 @@ export const submitAnamnesisHandler = async (
       ...req.body,
     });
 
-    const visit = await findVisitById(visitId);
+    const { visit, ...response } = result;
     visit.visitStatus = VISIT_COMPLETED_ANAMNESIS;
     await visit.save();
 
@@ -154,7 +155,7 @@ export const submitAnamnesisHandler = async (
       entities: result.createdEntities,
     });
 
-    return res.status(201).json(result);
+    return res.status(201).json(response);
   } catch (error) {
     console.error(
       JSON.stringify(
@@ -194,7 +195,8 @@ export const createMedicationRequestBundleHandler =
           ...req.body,
           user: req.user,
         });
-      const visit = await findVisitById(visitId);
+
+      const { visit, ...response } = result;
       visit.visitStatus = VISIT_FINALIZED;
       await visit.save();
 
@@ -203,7 +205,7 @@ export const createMedicationRequestBundleHandler =
         entities: result.createdEntities,
       });
 
-      return res.status(201).json(result);
+      return res.status(201).json(response);
     } catch (error) {
       console.error(
         JSON.stringify(
