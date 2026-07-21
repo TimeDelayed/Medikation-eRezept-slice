@@ -35,6 +35,7 @@ const visitSchema = new Schema({
   anamnesis : {
     type: anamnesisSchema,
     required: false,
+    _id: false,
   },
   // from doctor
   localPrescriptions: [

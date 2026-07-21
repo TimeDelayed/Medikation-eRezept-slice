@@ -32,6 +32,7 @@ const anamnesisSchema = new Schema({
     fhirConsentId: String,
 
     decidedAt: Date,
+    _id: false,
   },
 }, { timestamps: true });
 
