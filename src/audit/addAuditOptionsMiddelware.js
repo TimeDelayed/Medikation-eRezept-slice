@@ -4,6 +4,7 @@ export const addAuditOptions = (action, resourceType) => {
     req.auditOptions = {
       action: action,
       resourceType: resourceType,
+      visitId: req.params.visitId,
     };
     next();
   };
