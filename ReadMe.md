@@ -3,11 +3,11 @@
 RESTful backend for the medication/ePrescription project.
 
 ## Wichtig
-Y steht zwar auf Miro als Gruppenmitglied, hat sich aber entschieden nicht an der Gruppe teilzunehmen. 
+Lea Feilberg steht zwar auf Miro als Gruppenmitglied, hat sich aber entschieden nicht an der Gruppe teilzunehmen. 
 Dies wurde im privaten chat abgesprochen.
 
 ### Hinweis zur Gruppenarbeit
-X und Z haben dieses Repo gemeinsam erarbeitet und an einigen Stellen Co-Working und Pair-Programming betrieben.
+Nikita Schmidt und Nils Scharein haben dieses Repo gemeinsam erarbeitet und an einigen Stellen Co-Working und Pair-Programming betrieben.
 Die Leistung verteilt sich somit auf etwa 50 / 50.
 
 ## Anforderungen an das Projekt und unsere Grundlagen
@@ -23,24 +23,31 @@ In der Praxis kann es jederzeit dazu kommen, dass eine andere Praxis oder ein an
 Wie gehen wir damit um?
 
 Wir haben uns dazu entschieden, **FHIR als einzige Source of Truth** zu nehmen.
-Lokal halten wir ausschließlich Referenzen auf FHIR-Ressourcen – niemals Kopien der eigentlichen Patientendaten.
+Lokal halten wir ausschließlich Referenzen auf FHIR-Ressourcen – niemals Kopien von Patientenstammdaten.
 Dadurch sind wir gezwungen, die Daten auf FHIR aktuell zu halten und nur diesen zu vertrauen. Ein Abgleich veralteter lokaler Kopien entfällt.
 
 ### 2. Eigene IDs statt übernommener Ressourcen-IDs
 
-Obwohl wir FHIR-Referenzen speichern, werden diese **nicht für die interne Logik** verwendet, da wir nach folgendem Prinzip immer eigene IDs vergeben müssen:
+Obwohl wir FHIR-Referenzen speichern, werden diese (mit außnahme zur patienten ID vom FHIR Server) 
+**nicht für die interne Logik** verwendet, da wir nach folgendem Prinzip immer eigene IDs vergeben müssen:
 
 > "Der Medication Service MUSS übermittelte id-Werte von Ressourcen im Rahmen einer Operation verwerfen und stattdessen eine neue ID vergeben, die im weiteren Verlauf der Operation verwendet wird." — [gematik: ePA Medication, General Principles](https://gemspec.gematik.de/ig/fhir/epa-medication/1.3.1/general-principles.html)
 
 Das hat uns dazu bewegt, eine **eigene `Visit`-Schema-Klasse** zu erstellen, die alle relevanten Daten unter einer selbst vergebenen `visitId` (via `nanoid`) verknüpft.
-Der `Visit` ist damit unser interner Anker. Die FHIR-IDs bleiben reine Referenzen nach außen für einen schnellen lookup. 
+Der `Visit` ist damit unser interner Anker. Die Patienten-FHIR-ID bleibt reine Referenzen nach außen für einen schnellen lookup. Diese wird nicht von unseren eigenen Endpunkten als Input angenommen.
+
+_Warum verwenden wir die Patient-FHIR-ID's überhaupt als technischen Lookup zum FHIR-Server?_
+In der realen Welt ist die KV-Nummer unser Identifikationsmerkmal für die Patienten. In unserem
+Fall prüft der Test-FHIR-Server nicht, ob eine KV-Nummer existiert, geschweige denn ob es 
+Dopplungen gibt. Wir können uns also nicht auf die KV-Nummer verlassen, und verwenden daher
+die Patienten-FHIR-ID, da diese unique ist!
 
 ### 3. Consent-gesteuerter Datenfluss (DSGVO)
 
-Ergänzend haben wir die DSGVO nach für uns relevanten Inhalten durchsucht. Daraus folgt: Anamnesedaten werden **nur mit gültigem Consent** an FHIR übertragen.
+Ergänzend haben wir die DSGVO zu den für unser Szenario relevanten Regelungen geprüft. Die lokale Speicherung der im Rahmen der Behandlung erhobenen Daten erfolgt **unabhängig von einer datenschutzrechtlichen Einwilligung**. Rechtsgrundlage hierfür sind insbesondere [**Art. 6 Abs. 1 lit. b DSGVO (Erfüllung des Behandlungsvertrags)**](https://dsgvo-gesetz.de/art-6-dsgvo/) sowie [**Art. 9 Abs. 2 lit. h DSGVO (Verarbeitung von Gesundheitsdaten zum Zweck der medizinischen Versorgung)**](https://dsgvo-gesetz.de/art-9-dsgvo/). Da Gesundheitsdaten einer besonderen Kategorie personenbezogener Daten angehören (Art. 9 DSGVO), haben wir uns im Projekt dafür entschieden, Anamnesedaten ausschließlich nach dokumentierter Einwilligung (Consent) an FHIR zu übertragen
 
-* Bei `permit` wird die Anamnese als **Transaction-Bundle** (Condition + MedicationStatement + Consent) an FHIR gesendet.
-* Bei `deny` wird **nur** eine Consent-Ressource geschrieben – keine medizinischen Daten.
+* Bei `permit` wird die Anamnese als **Transaction-Bundle** (Condition + MedicationStatement + Consent + Provenance -> alle referenzieren den Patienten) an FHIR gesendet.
+* Bei `deny` wird **nur** ein Bundle mit Consent-Ressource und Provenance geschrieben – keine medizinischen Daten.
 
 ### 4. Gesetzliche Aufbewahrungsfrist
 
